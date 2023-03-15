@@ -2,6 +2,20 @@
 	"name": "ArcticEngine",
 	"build": {
 		"context": "..",
-	  "dockerfile": "Dockerfile"
-	}
+		"dockerfile": "Dockerfile"
+	},
+	"containerEnv": {
+		"DISPLAY": "${localEnv:DISPLAY}",
+		"XAUTHORITY": "${localEnv:XAUTHORITY}",
+	},
+	"mounts": [
+		"source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind",
+		"source=/dev,target=/dev,type=bind",
+	],
+	"runArgs": [
+		"--network=host",
+		"--privileged",
+		"--gpus","all",
+		"--runtime","nvidia"
+	],
 }
