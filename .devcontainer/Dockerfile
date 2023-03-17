@@ -120,7 +120,7 @@ RUN ICD_NVIDIA="/vulkan-icd/nvidia_icd.json" && \
     && echo '}' >> /$ICD_NVIDIA
 
 # Install necessary dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --install-recommends \
     nano \
     libvulkan1 \
     mesa-vulkan-drivers \
@@ -146,11 +146,16 @@ RUN apt-get update && apt-get install -y \
     libxcomposite1 \
     libfontconfig1 \
     libgl1 \
+    libgl1-mesa-dev \
     libfontconfig1 \
     libxi6 \
+    libxi-dev \
     libxrender1 \
+    libxrandr-dev \
+    libxinerama-dev \
     libxrandr2 \
     libxcursor1 \
+    libxcursor-dev \
     libdbus-1-3 \
     xauth
 

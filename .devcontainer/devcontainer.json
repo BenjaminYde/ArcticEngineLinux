@@ -15,7 +15,22 @@
 	"runArgs": [
 		"--network=host",
 		"--privileged",
-		"--gpus","all",
-		"--runtime","nvidia"
+		"--gpus",
+		"all",
+		"--runtime",
+		"nvidia"
 	],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode.cpptools-themes",
+				"ms-vscode.cpptools",
+				"franneck94.c-cpp-runner",
+				"ms-vscode.cmake-tools",
+				"mhutchie.git-graph",
+				"vadimcn.vscode-lldb",
+				"marlongerson.jetbrains-icons"
+			]
+		}
+	}
 }
