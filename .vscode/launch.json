@@ -8,7 +8,7 @@
             "name": "Clang Debug",
             "type": "lldb",
             "request": "launch",
-            "program": "${workspaceFolder}/build/linux-clang-debug/ArcticEngine2",
+            "program": "${workspaceFolder}/build/linux-clang-debug/src/game/ArcticGame",
             "args": [],
             "cwd": "${workspaceFolder}",
         }

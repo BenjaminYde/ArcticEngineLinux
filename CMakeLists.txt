@@ -13,9 +13,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project(Arctic
         LANGUAGES "CXX")
 
-add_executable(ArcticEngine2
-        main.cpp)
-
 #cmake_print_variables(CMAKE_CXX_COMPILER_ID)
 #cmake_print_variables(CMAKE_CXX_COMPILER_VERSION)
 #cmake_print_variables(CMAKE_CXX_COMPILER)

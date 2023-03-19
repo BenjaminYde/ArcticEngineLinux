@@ -89,6 +89,23 @@ ENV PATH="${VULKAN_SDK}/bin:$PATH"
 ENV LD_LIBRARY_PATH="${VULKAN_SDK}/lib:$LD_LIBRARY_PATH"
 ENV VK_LAYER_PATH="${VULKAN_SDK}/etc/vulkan/explicit_layer.d"
 
+# Set environment variables for NVIDIA and Vulkan
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
+#ENV VK_ICD_FILENAMES /usr/share/vulkan/icd.d/nvidia_icd.json
+ENV VK_ICD_FILENAMES=/vulkan-icd/nvidia_icd.json
+
+RUN ICD_NVIDIA="/vulkan-icd/nvidia_icd.json" && \
+    mkdir -p /vulkan-icd && \
+    touch /vulkan-icd/nvidia_icd.json \
+    && echo '{' >> $ICD_NVIDIA \
+    && echo '    "file_format_version" : "1.0.0",' >> $ICD_NVIDIA \
+    && echo '    "ICD": {' >> $ICD_NVIDIA \
+    && echo '        "library_path": "libGLX_nvidia.so.0",' >> $ICD_NVIDIA \
+    && echo '        "api_version" : "1.3.239"' >> $ICD_NVIDIA \
+    && echo '    }' >> $ICD_NVIDIA \
+    && echo '}' >> /$ICD_NVIDIA
+
 # Install ZSH
 RUN sudo apt install -y zsh && \
     sudo chsh -s /usr/bin/zsh && \
@@ -100,78 +117,65 @@ RUN sudo apt install -y zsh && \
     sed -i 's/ZSH_THEME=.*/ZSH_THEME="eastwood"/' .zshrc && \
     echo "ZSH Installed"
 
-#Install SSH
-
-# Set environment variables for NVIDIA and Vulkan
-ENV NVIDIA_VISIBLE_DEVICES all
-ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
-ENV VK_ICD_FILENAMES /usr/share/vulkan/icd.d/nvidia_icd.json
-ENV VK_ICD_FILENAMES=/vulkan-icd/nvidia_icd.json
-
-RUN ICD_NVIDIA="/vulkan-icd/nvidia_icd.json" && \
-    mkdir -p /vulkan-icd && \
-    touch /vulkan-icd/nvidia_icd.json && \
-    echo '{' >> $ICD_NVIDIA \
-    && echo '    "file_format_version" : "1.0.0",' >> $ICD_NVIDIA \
-    && echo '    "ICD": {' >> $ICD_NVIDIA \
-    && echo '        "library_path": "libGLX_nvidia.so.0",' >> $ICD_NVIDIA \
-    && echo '        "api_version" : "1.3.239"' >> $ICD_NVIDIA \
-    && echo '    }' >> $ICD_NVIDIA \
-    && echo '}' >> /$ICD_NVIDIA
-
-# Install necessary dependencies
+# Install vulkan dependencies
 RUN apt-get update && apt-get install -y --install-recommends \
+    #other
     nano \
+    # vulkan
     libvulkan1 \
     mesa-vulkan-drivers \
-    vulkan-tools \
-    libxcb1-dev \
-    libxcb-keysyms1-dev \
-    libxcb-dri3-dev \
-    libxcb-xinerama0-dev \
-    libxcb-icccm4-dev \
-    libxcb-image0-dev \
-    libxcb-randr0-dev \
-    libxcb-shape0-dev \
-    libxcb-xkb-dev \
-    libxkbcommon-dev \
-    libxkbcommon-x11-dev \
-    libwayland-dev \
-    libx11-xcb-dev \
-    libx11-dev \
-    libxcb-glx0 \
-    libxcb-xinput0 \
-    libxcb-render-util0 \
-    libegl1 \
-    libxcomposite1 \
-    libfontconfig1 \
-    libgl1 \
+    vulkan-tools
+
+# Install glfw dependencies
+RUN apt-get update && apt-get install -y --install-recommends \
+    # open gl    
     libgl1-mesa-dev \
-    libfontconfig1 \
-    libxi6 \
-    libxi-dev \
-    libxrender1 \
+    # x general
+    #libxrender1 \
     libxrandr-dev \
     libxinerama-dev \
-    libxrandr2 \
-    libxcursor1 \
+    #libxrandr2 \
+    #libxcursor1 \
     libxcursor-dev \
-    libdbus-1-3 \
-    xauth
+    xauth \
+    #libwayland-dev \
+    libx11-dev \
+    libx11-xcb-dev \
+    #libxcomposite1 \
+    # xi (X Input)
+    #libxi6 \
+    libxi-dev \
+    # xcb (X C Binding dev packages)
+    libxcb1-dev \
+    #libxcb-keysyms1-dev \
+    #libxcb-dri3-dev \
+    #libxcb-xinerama0-dev \
+    #libxcb-icccm4-dev \
+    #libxcb-image0-dev \
+    libxcb-randr0-dev 
+    #libxcb-shape0-dev \
+    #libxcb-xkb-dev \
+    #libxcb-glx0 \
+    #libxcb-xinput0 \
+    #libxcb-render-util0
+    # xkb (X Keyboard dev packages)
+    #libxkbcommon-dev \
+    #libxkbcommon-x11-dev
 
 # change root password
 #RUN echo 'root:password' | chpasswd
 
+#Install SSH
 #RUN apt-get update && \
 #    apt-get install -y \
 #    openssh-server \
 #    systemctl
-
-# Configure SSH
+#
+## Configure SSH
 #RUN mkdir /var/run/sshd
 #RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
-
-# Start SSH
+#
+## Start SSH
 #EXPOSE 22
 
 #sudo apt-get install libnvidia-egl-wayland1 libnvidia-gl-525
