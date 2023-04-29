@@ -47,7 +47,6 @@ target_include_directories(${TARGET}
 
 # link packages
 FindPackage_Vulkan(${TARGET})
-#find_package(Vulkan REQUIRED)
 FindPackage_GLFW(  ${TARGET})
 FindPackage_GLM(   ${TARGET})
 FindPackage_FMT(   ${TARGET})

@@ -12,7 +12,7 @@ function(FindPackage_Vulkan TARGET_NAME)
         else()
             target_link_libraries(${TARGET_NAME} PRIVATE vulkan)
         endif()        
-    set(Vulkan_FOUND "True")
+        set(Vulkan_FOUND "True")
         # not found SDK
     else()
         message("not found vulkan sdk")

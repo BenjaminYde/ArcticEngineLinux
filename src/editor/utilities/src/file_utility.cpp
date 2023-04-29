@@ -18,7 +18,7 @@ bool FileUtility::ReadBinaryFile(const std::string& path, std::vector<char>& buf
         return false;
 
     // create buffer
-    size_t fileSize = (size_t) file.tellg();
+    auto fileSize = (size_t) file.tellg();
     buffer = std::vector<char>(fileSize);
     file.seekg(0);
     file.read(buffer.data(), fileSize);

@@ -10,8 +10,13 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 project(Arctic
         LANGUAGES "CXX")
+
+#add_executable(Arctic main.cpp)
+#return()
 
 #cmake_print_variables(CMAKE_CXX_COMPILER_ID)
 #cmake_print_variables(CMAKE_CXX_COMPILER_VERSION)
@@ -23,21 +28,21 @@ if(NOT UNIX)
     message(FATAL_ERROR "Project must be compiled on Unix!")
 endif()
 
-add_definitions(-DVK_USE_PLATFORM_XCB_KHR)
-add_definitions(-DVK_USE_PLATFORM_XLIB_KHR)
-add_definitions(-DGLFW_EXPOSE_NATIVE_X11)
-
 # check compiler: force use clang (for the moment)
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-    if(${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 15.0.7)
-        message(FATAL_ERROR "Clang compiler version is smaller then 15.0.7! Current compiler version is ${CMAKE_CXX_COMPILER_VERSION}")
+    if(${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 16.0.2)
+        message(FATAL_ERROR "Clang compiler version is smaller then 16.0.2! Current compiler version is ${CMAKE_CXX_COMPILER_VERSION}")
     endif()
 else()
         message(FATAL_ERROR "Project must be compiled using preset! Current compiler is ${CMAKE_CXX_COMPILER_ID}")
 endif()
 
-#defines
+# defines
 add_definitions(-DARCTIC_ASSETS_DIR="${CMAKE_CURRENT_LIST_DIR}/assets")
+
+# set vulkan flags
+add_definitions(-DVK_USE_PLATFORM_XCB_KHR)
+add_definitions(-DGLFW_EXPOSE_NATIVE_X11)
 
 # add sub directories
 add_subdirectory(external)

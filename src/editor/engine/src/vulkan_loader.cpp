@@ -10,8 +10,6 @@
 
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
-#include <algorithm>
-#include <limits>
 #include <iostream>
 #include <fmt/core.h>
 
@@ -23,11 +21,11 @@ void VulkanLoader::vulkanCreateInstance()
     // create app info
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Hello Triangle";
+    appInfo.pApplicationName = "ArcticGame";
     appInfo.applicationVersion = VK_MAKE_VERSION(1,0,0);
-    appInfo.pEngineName = "No Engine";
+    appInfo.pEngineName = "ArcticEngine";
     appInfo.engineVersion = VK_MAKE_VERSION(1,0,0);
-    appInfo.apiVersion = VK_API_VERSION_1_0;
+    appInfo.apiVersion = VK_API_VERSION_1_3;
 
     // create vk instance create info
     VkInstanceCreateInfo createInfo{};
@@ -75,10 +73,6 @@ std::vector<const char*> VulkanLoader::vulkanGetRequiredExtensions()
         const char* extension = glfwExtensions[i];
         extensions.push_back(extension);
     }
-
-    // linux extensions
-    //extensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
-
 
     // get validation extension
     if (enableValidationLayers)
@@ -537,35 +531,35 @@ void VulkanLoader::vulkanCreateRenderPass()
 
 void VulkanLoader::vulkanCreatePipeline()
 {
-    // read vertex shader
+    // read file: vertex shader
     std::vector<char> fileVert;
     std::string pathVert = fmt::format("{}/shaders/{}", Application::AssetsPath, "vert.spv");
     FileUtility::ReadBinaryFile(pathVert, fileVert);
     VkShaderModule shaderModuleVert;
     vulkanCreateShaderModule(fileVert, shaderModuleVert);
 
-    // read frag shader
+    // read file: frag shader
     std::vector<char> fileFrag;
     std::string pathFrag= fmt::format("{}/shaders/{}",Application::AssetsPath, "frag.spv");
     FileUtility::ReadBinaryFile(pathFrag, fileFrag);
     VkShaderModule shaderModuleFrag;
     vulkanCreateShaderModule(fileFrag, shaderModuleFrag);
 
-    // create pipeline: vertex
+    // create vertex pipeline shader stage 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
     vertShaderStageInfo.module = shaderModuleVert;
     vertShaderStageInfo.pName = "main";
 
-    // create pipeline: frag
+    // create frag pipeline shader stage 
     VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
     fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
     fragShaderStageInfo.module = shaderModuleFrag;
     fragShaderStageInfo.pName = "main";
 
-    // combine pipelines
+    // combine pipeline shader stages
     VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
 
     // create info: dynamic states
@@ -573,8 +567,8 @@ void VulkanLoader::vulkanCreatePipeline()
     //> a limited amount of the state can actually be changed without recreating the pipeline at draw time
     std::vector<VkDynamicState> dynamicStates =
     {
-            VK_DYNAMIC_STATE_VIEWPORT,
-            VK_DYNAMIC_STATE_SCISSOR
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR
     };
 
     VkPipelineDynamicStateCreateInfo dynamicState{};
@@ -622,7 +616,7 @@ void VulkanLoader::vulkanCreatePipeline()
     viewportState.scissorCount = 1;
     viewportState.pScissors = &scissor;
 
-    // create info: reate rasterizer
+    // create info: rasterizer
     //> the rasterizer takes the geometry that is shaped by the vertices from the vertex shader
     //> and turns it into fragments to be colored by the fragment shader
     //> it also performs depth testing, face culling, ...
@@ -770,9 +764,9 @@ void VulkanLoader::vulkanCreateFramebuffers()
     for (size_t i = 0; i < swapChainImageViews.size(); i++)
     {
         VkImageView attachments[] =
-                {
-                        swapChainImageViews[i]
-                };
+        {
+            swapChainImageViews[i]
+        };
 
         // create info: frame buffer
         //> you can only use a framebuffer with the render passes that it is compatible with
@@ -1045,7 +1039,7 @@ void VulkanLoader::vulkanLoadSurface()
 
     if(resultWindows != VK_SUCCESS)
     {
-        std::cout << "error: vulkan: failed to create window 32 surface!";
+        std::cout << "error: vulkan: failed to create surface!";
         return;
     }
 
@@ -1110,7 +1104,7 @@ void VulkanLoader::Draw()
     vkResetCommandBuffer(vkCommandBuffer, 0);
     vulkanRecordCommandBuffer(vkCommandBuffer, availableImageIndex);
 
-    // create info: command buffer submit
+    // create info: command buffer submit 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -1157,6 +1151,9 @@ void VulkanLoader::Draw()
 
 void VulkanLoader::Cleanup()
 {
+    // wait until device is not executing work
+    vkDeviceWaitIdle(vkDevice);
+
     // syncing
     vkDestroySemaphore(vkDevice, imageAvailableSemaphore, nullptr);
     vkDestroySemaphore(vkDevice, renderFinishedSemaphore, nullptr);

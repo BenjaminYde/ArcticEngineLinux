@@ -51,29 +51,43 @@ RUN apt update && \
     ./bootstrap-vcpkg.sh
 ENV PATH="/opt/vcpkg:${PATH}"
 
-# Download Clang 15.0.7
-RUN apt update && \
-    cd /tmp && \
-    curl -LO https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-15.0.7.tar.gz && \
-    tar -xvf llvmorg-15.0.7.tar.gz && \
-    rm llvmorg-15.0.7.tar.gz
+# Download Clang from source
+#ENV CLANG_VERSION 15.0.7
+#RUN apt update && \
+#    cd /tmp && \
+#    curl -LO https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${CLANG_VERSION}.tar.gz && \
+#    tar -xvf llvmorg-${CLANG_VERSION}.tar.gz && \
+#    rm llvmorg-${CLANG_VERSION}.tar.gz
 
-# Build Clang 15.0.7
-RUN apt update && \
-    cd /tmp/llvm-project-llvmorg-15.0.7 && \
-    mkdir build && cd build && \
-    cmake \
-        -DLLVM_ENABLE_PROJECTS=clang \
-        -DCMAKE_BUILD_TYPE=Release \
-        -G "Unix Makefiles" \
-        ../llvm \
-        && \
-    make clang -j $(nproc)
+# Build Clang from source
+#RUN apt update && \
+#    cd /tmp/llvm-project-llvmorg-${CLANG_VERSION} && \
+#    mkdir build && cd build && \
+#    cmake \
+#        -DLLVM_ENABLE_PROJECTS=clang \
+#        -DCMAKE_BUILD_TYPE=Release \
+#        -G "Unix Makefiles" \
+#        ../llvm \
+#        && \
+#    make clang -j $(nproc)
 
-# Install Clang 15.0.7
-RUN cd /tmp/llvm-project-llvmorg-15.0.7 && \
-    mv build /opt/clang-15.0.7
-ENV PATH="/opt/clang-15.0.7/bin:${PATH}"
+# Install Clang from source
+#RUN cd /tmp/llvm-project-llvmorg-${CLANG_VERSION} && \
+#    mv build /opt/clang-${CLANG_VERSION}
+#ENV PATH="/opt/clang-15.0.7/bin:${PATH}"
+
+# Download and install Clang binaries
+ENV CLANG_VERSION 16.0.2
+RUN cd /tmp && \
+    curl -L -O https://github.com/llvm/llvm-project/releases/download/llvmorg-${CLANG_VERSION}/clang+llvm-${CLANG_VERSION}-x86_64-linux-gnu-ubuntu-22.04.tar.xz && \
+    tar -xf clang+llvm-${CLANG_VERSION}-x86_64-linux-gnu-ubuntu-22.04.tar.xz && \
+    rm      clang+llvm-${CLANG_VERSION}-x86_64-linux-gnu-ubuntu-22.04.tar.xz
+    
+# Install Clang
+RUN cd /tmp && \
+    mkdir /opt/clang-${CLANG_VERSION} && \
+    mv clang+llvm-${CLANG_VERSION}-x86_64-linux-gnu-ubuntu-22.04/* /opt/clang-${CLANG_VERSION}
+ENV PATH="/opt/clang-${CLANG_VERSION}/bin:${PATH}"
 
 # Download and extract the LunarG Vulkan SDK 1.3.239
 ENV VULKAN_SDK_VERSION 1.3.239.0
@@ -121,6 +135,7 @@ RUN sudo apt install -y zsh && \
 RUN apt-get update && apt-get install -y --install-recommends \
     #other
     nano \
+    net-tools \
     # vulkan
     libvulkan1 \
     mesa-vulkan-drivers \
@@ -131,63 +146,16 @@ RUN apt-get update && apt-get install -y --install-recommends \
     # open gl    
     libgl1-mesa-dev \
     # x general
-    #libxrender1 \
     libxrandr-dev \
     libxinerama-dev \
-    #libxrandr2 \
-    #libxcursor1 \
     libxcursor-dev \
     xauth \
-    #libwayland-dev \
     libx11-dev \
     libx11-xcb-dev \
-    #libxcomposite1 \
-    # xi (X Input)
-    #libxi6 \
     libxi-dev \
-    # xcb (X C Binding dev packages)
     libxcb1-dev \
-    #libxcb-keysyms1-dev \
-    #libxcb-dri3-dev \
-    #libxcb-xinerama0-dev \
-    #libxcb-icccm4-dev \
-    #libxcb-image0-dev \
     libxcb-randr0-dev 
-    #libxcb-shape0-dev \
-    #libxcb-xkb-dev \
-    #libxcb-glx0 \
-    #libxcb-xinput0 \
-    #libxcb-render-util0
-    # xkb (X Keyboard dev packages)
-    #libxkbcommon-dev \
-    #libxkbcommon-x11-dev
-
-# change root password
-#RUN echo 'root:password' | chpasswd
-
-#Install SSH
-#RUN apt-get update && \
-#    apt-get install -y \
-#    openssh-server \
-#    systemctl
-#
-## Configure SSH
-#RUN mkdir /var/run/sshd
-#RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
-#
-## Start SSH
-#EXPOSE 22
-
-#sudo apt-get install libnvidia-egl-wayland1 libnvidia-gl-525
-
 
 ENTRYPOINT ["/usr/bin/zsh"]
 
-#RUN useradd -u 1000 benjamin && \
-#    echo "benjamin:benjamin" | chpasswd && \
-#    adduser benjamin sudo && \
-#    mkdir -p /home/benjamin && \
-#    chown -R benjamin /home/benjamin && \
-#    printf "\benjamin ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-#USER benjamin
-#WORKDIR /home/benjamin
+WORKDIR /home/benjamin

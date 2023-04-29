@@ -1,5 +1,4 @@
 #include "engine/arctic_engine.h"
-#include <iostream>
 
 int main()
 {
