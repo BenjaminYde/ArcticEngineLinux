@@ -89,13 +89,13 @@ RUN cd /tmp && \
     mv clang+llvm-${CLANG_VERSION}-x86_64-linux-gnu-ubuntu-22.04/* /opt/clang-${CLANG_VERSION}
 ENV PATH="/opt/clang-${CLANG_VERSION}/bin:${PATH}"
 
-# Download and extract the LunarG Vulkan SDK 1.3.239
-ENV VULKAN_SDK_VERSION 1.3.239.0
+# Download and extract the LunarG Vulkan SDK
+ENV VULKAN_SDK_VERSION 1.3.243.0
 RUN cd /tmp && \
-    wget https://sdk.lunarg.com/sdk/download/${VULKAN_SDK_VERSION}/linux/vulkansdk-linux-x86_64-${VULKAN_SDK_VERSION}.tar.gz && \
+    curl -L -O https://sdk.lunarg.com/sdk/download/${VULKAN_SDK_VERSION}/linux/vulkansdk-linux-x86_64-${VULKAN_SDK_VERSION}.tar.gz && \
     tar zxvf vulkansdk-linux-x86_64-${VULKAN_SDK_VERSION}.tar.gz && \
     rm vulkansdk-linux-x86_64-${VULKAN_SDK_VERSION}.tar.gz && \
-    mv 1.3.239.0 /opt/vulkansdk-${VULKAN_SDK_VERSION}
+    mv ${VULKAN_SDK_VERSION} /opt/vulkansdk-${VULKAN_SDK_VERSION}
     
 # Setup Vulkan SDK environment variables
 ENV VULKAN_SDK="/opt/vulkansdk-${VULKAN_SDK_VERSION}/x86_64"
@@ -116,7 +116,7 @@ RUN ICD_NVIDIA="/vulkan-icd/nvidia_icd.json" && \
     && echo '    "file_format_version" : "1.0.0",' >> $ICD_NVIDIA \
     && echo '    "ICD": {' >> $ICD_NVIDIA \
     && echo '        "library_path": "libGLX_nvidia.so.0",' >> $ICD_NVIDIA \
-    && echo '        "api_version" : "1.3.239"' >> $ICD_NVIDIA \
+    && echo '        "api_version" : "1.3.243"' >> $ICD_NVIDIA \
     && echo '    }' >> $ICD_NVIDIA \
     && echo '}' >> /$ICD_NVIDIA
 
