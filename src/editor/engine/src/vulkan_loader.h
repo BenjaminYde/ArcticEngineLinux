@@ -10,8 +10,8 @@
 #include <set>
 #include <vulkan/vulkan_core.h>
 
-#include "swapchain_data.h"
 class RenderPipeline;
+class SwapChain;
 
 class GLFWwindow;
 
@@ -39,18 +39,10 @@ private:
     VkDevice vkDevice = VK_NULL_HANDLE;
 
     VkSurfaceKHR vkSurface;
-    VkSwapchainKHR vkSwapChain;
-    std::vector<VkImage> swapChainImages;
-    std::vector<VkImageView> swapChainImageViews;
-
-    //VkRenderPass vkRenderPass;
-    //VkPipelineLayout vkPipelineLayout;
-    //VkPipeline vkPipeline;
 
     VkQueue vkGraphicsQueue;
     VkQueue vkPresentQueue;
 
-    //std::vector<VkFramebuffer> swapChainFramebuffers;
     VkCommandPool vkCommandPool;
     VkCommandBuffer vkCommandBuffer;
 
@@ -74,14 +66,7 @@ private:
         }
     };
 
-    struct SwapChainDeviceSupport
-    {
-        VkSurfaceCapabilitiesKHR capabilities; // image width/height, min/max images, ...
-        std::vector<VkSurfaceFormatKHR> surfaceFormats; // pixel format, color space, ...
-        std::vector<VkPresentModeKHR> presentModes; // FIFO, Mailbox, ...
-    };
-
-    SwapChainData swapChainData;
+    SwapChain* pSwapchain;
     RenderPipeline* pRenderPipeline;
 
     void vulkanCreateInstance();
@@ -90,13 +75,6 @@ private:
     void vulkanLoadPhysicalDevice();
     void vulkanCreateLogicalDevice();
 
-    void vulkanCreateSwapChain();
-    void vulkanCreateImageViews();
-    
-    void vulkanCreateRenderPass();
-    void vulkanCreatePipeline();
-    void vulkanCreateFramebuffers();
-    
     void vulkanCreateCommandPool();
     void vulkanCreateCommandBuffer();
     void vulkanCreateSyncObjects();
@@ -111,12 +89,6 @@ private:
                             QueueFamilyIndices queueFamilyIndices);
     QueueFamilyIndices findQueueFamilies(const VkPhysicalDevice& device);
     bool findRequiredDeviceExtensions(const VkPhysicalDevice& device);
-
-    // swap chain
-    SwapChainDeviceSupport querySwapChainSupport(const VkPhysicalDevice& device);
-    VkSurfaceFormatKHR selectSwapChainSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-    VkPresentModeKHR selectSwapChainPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-    VkExtent2D selectSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
     // validation layers
     const bool enableValidationLayers = false;
