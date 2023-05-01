@@ -10,6 +10,9 @@
 #include <set>
 #include <vulkan/vulkan_core.h>
 
+#include "swapchain_data.h"
+class RenderPipeline;
+
 class GLFWwindow;
 
 class VulkanLoader
@@ -40,14 +43,14 @@ private:
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
 
-    VkRenderPass vkRenderPass;
-    VkPipelineLayout vkPipelineLayout;
-    VkPipeline vkPipeline;
+    //VkRenderPass vkRenderPass;
+    //VkPipelineLayout vkPipelineLayout;
+    //VkPipeline vkPipeline;
 
     VkQueue vkGraphicsQueue;
     VkQueue vkPresentQueue;
 
-    std::vector<VkFramebuffer> swapChainFramebuffers;
+    //std::vector<VkFramebuffer> swapChainFramebuffers;
     VkCommandPool vkCommandPool;
     VkCommandBuffer vkCommandBuffer;
 
@@ -78,23 +81,22 @@ private:
         std::vector<VkPresentModeKHR> presentModes; // FIFO, Mailbox, ...
     };
 
-    struct SwapChainData
-    {
-        VkFormat imageFormat;
-        VkExtent2D extent;
-    };
     SwapChainData swapChainData;
+    RenderPipeline* pRenderPipeline;
 
     void vulkanCreateInstance();
     void vulkanLoadDebugMessenger();
     void vulkanLoadSurface();
     void vulkanLoadPhysicalDevice();
     void vulkanCreateLogicalDevice();
+
     void vulkanCreateSwapChain();
     void vulkanCreateImageViews();
+    
     void vulkanCreateRenderPass();
     void vulkanCreatePipeline();
     void vulkanCreateFramebuffers();
+    
     void vulkanCreateCommandPool();
     void vulkanCreateCommandBuffer();
     void vulkanCreateSyncObjects();

@@ -23,7 +23,9 @@ target_sources(${TARGET}
         ${INCLUDE_DIRS_INTERNAL}/arctic_engine.h
         PRIVATE
         ${SRC_DIR}/arctic_engine.cpp
-        ${SRC_DIR}/vulkan_loader.cpp)
+        ${SRC_DIR}/vulkan_loader.cpp
+        ${SRC_DIR}/renderpipeline.cpp
+        ${SRC_DIR}/swapchain_data.h)
 
 # set includes
 target_include_directories(${TARGET}
