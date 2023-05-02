@@ -1,16 +1,16 @@
-#ifndef ARCTIC_ARCTIC_ENGINE_H
-#define ARCTIC_ARCTIC_ENGINE_H
+#pragma once
 
 class VulkanLoader;
+class VulkanWindow;
 
 class ArcticEngine
 {
 public:
-    void initialize();
-    void run();
-    void cleanup();
+    void Initialize();
+    void Run();
+    void Cleanup();
+
 private:
     VulkanLoader* vulkanLoader;
+    VulkanWindow* pVulkanWindow;
 };
-
-#endif //ARCTIC_ARCTIC_ENGINE_H

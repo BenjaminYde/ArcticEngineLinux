@@ -25,7 +25,8 @@ target_sources(${TARGET}
         ${SRC_DIR}/arctic_engine.cpp
         ${SRC_DIR}/vulkan_loader.cpp
         ${SRC_DIR}/renderpipeline.cpp
-        ${SRC_DIR}/swapchain.cpp)
+        ${SRC_DIR}/swapchain.cpp
+        ${SRC_DIR}/vulkan_window.cpp)
 
 # set includes
 target_include_directories(${TARGET}

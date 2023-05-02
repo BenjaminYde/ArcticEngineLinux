@@ -2,24 +2,19 @@
 #include "utilities/file_utility.h"
 #include "utilities/application.h"
 
-#ifdef WIN32
-#define VK_USE_PLATFORM_WIN32_KHR
-//#define GLFW_EXPOSE_NATIVE_WIN32
-#endif
-#define GLFW_INCLUDE_VULKAN
-
-#include <GLFW/glfw3.h>
-#include <GLFW/glfw3native.h>
+//#include <GLFW/glfw3.h>
+//#include <GLFW/glfw3native.h>
 #include <iostream>
 #include <fmt/core.h>
 
-#include <xcb/xcb.h>
-#include <X11/Xlib-xcb.h>
+//#include <xcb/xcb.h>
+//#include <X11/Xlib-xcb.h>
 
+#include "vulkan_window.h"
 #include "renderpipeline.h"
 #include "swapchain.h"
 
-void VulkanLoader::vulkanCreateInstance()
+void VulkanLoader::vulkanCreateInstance(VulkanWindow & vulkanWindow)
 {
     // create app info
     VkApplicationInfo appInfo{};
@@ -50,7 +45,7 @@ void VulkanLoader::vulkanCreateInstance()
     }
 
     // set extensions
-    auto extensions = vulkanGetRequiredExtensions();
+    auto extensions = vulkanGetRequiredExtensions(vulkanWindow);
     createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
 
@@ -63,14 +58,16 @@ void VulkanLoader::vulkanCreateInstance()
     }
 }
 
-std::vector<const char*> VulkanLoader::vulkanGetRequiredExtensions()
+std::vector<const char*> VulkanLoader::vulkanGetRequiredExtensions(const VulkanWindow & vulkanWindow)
 {
     // create empty extensions
     std::vector<const char*> extensions;
 
     // get glfw extensions
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    auto glfwExtensionsData = vulkanWindow.GetGLFWExtensions();
+    uint32_t glfwExtensionCount = glfwExtensionsData.first;
+    const char** glfwExtensions = glfwExtensionsData.second;
+
     for(int i=0; i<glfwExtensionCount; ++i)
     {
         const char* extension = glfwExtensions[i];
@@ -125,10 +122,10 @@ void VulkanLoader::vulkanLoadPhysicalDevice()
         // get data of device
         vkGetPhysicalDeviceProperties(device, &deviceProperties);
         vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
-        queueFamilyIndices = findQueueFamilies(device);
+        queueFamilyIndices = findQueueFamilies(device, vkSurface);
 
         // break loop when found suitable device
-        if(isVkDeviceSuitable(device, deviceProperties, deviceFeatures, queueFamilyIndices))
+        if(isVkDeviceSuitable(device, vkSurface, deviceProperties, deviceFeatures, queueFamilyIndices))
         {
             vkPhysicalDevice = device;
             break;
@@ -143,13 +140,12 @@ void VulkanLoader::vulkanLoadPhysicalDevice()
     }
 }
 
-void VulkanLoader::vulkanCreateLogicalDevice()
+void VulkanLoader::vulkanCreateLogicalDevice(const VkPhysicalDevice & vkPhysicalDevice, QueueFamilyIndices indices)
 {
     // create device queue infos
     // >> create set of queue families (re-use queue families instead of creating duplicates)
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 
-    QueueFamilyIndices indices = findQueueFamilies(vkPhysicalDevice);
     std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
     float queuePriority = 1.0f;
@@ -196,9 +192,10 @@ void VulkanLoader::vulkanCreateLogicalDevice()
 
 bool VulkanLoader::isVkDeviceSuitable(
         const VkPhysicalDevice & device,
+        const VkSurfaceKHR & vkSurface,
         VkPhysicalDeviceProperties deviceProperties,
         VkPhysicalDeviceFeatures deviceFeatures,
-        QueueFamilyIndices queueFamilyIndices)
+        QueueFamilyIndices queueFamilyIndices) const
 {
     // check device properties
     if(deviceProperties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
@@ -219,7 +216,7 @@ bool VulkanLoader::isVkDeviceSuitable(
 
     // check if swap chain is valid
     // >> see device & surface
-    SwapChainDeviceSupport swapChainSupport = SwapChainValidator::QuerySwapChainSupport(device, vkSurface);
+    SwapChainDeviceSupport swapChainSupport = this->pSwapchain->QuerySwapChainSupport(device, vkSurface);
     bool isSwapChainValid = !swapChainSupport.surfaceFormats.empty() && !swapChainSupport.presentModes.empty();
     if(!isSwapChainValid)
         return false;
@@ -227,7 +224,7 @@ bool VulkanLoader::isVkDeviceSuitable(
     return true;
 }
 
-VulkanLoader::QueueFamilyIndices VulkanLoader::findQueueFamilies(const VkPhysicalDevice & device)
+VulkanLoader::QueueFamilyIndices VulkanLoader::findQueueFamilies(const VkPhysicalDevice & device, const VkSurfaceKHR & surface)
 {
     // get queue families
     uint32_t queueFamilyCount = 0;
@@ -247,7 +244,7 @@ VulkanLoader::QueueFamilyIndices VulkanLoader::findQueueFamilies(const VkPhysica
 
         // set present family
         VkBool32 isPresentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, familyIndex, vkSurface, &isPresentSupport);
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, familyIndex, surface, &isPresentSupport);
         if(isPresentSupport)
             queueFamilyIndices.presentFamily = familyIndex;
 
@@ -256,7 +253,7 @@ VulkanLoader::QueueFamilyIndices VulkanLoader::findQueueFamilies(const VkPhysica
     return queueFamilyIndices;
 }
 
-bool VulkanLoader::findRequiredDeviceExtensions(const VkPhysicalDevice & device)
+bool VulkanLoader::findRequiredDeviceExtensions(const VkPhysicalDevice & device) const
 {
     // get available device extensions
     uint32_t extensionCount;
@@ -281,10 +278,8 @@ bool VulkanLoader::findRequiredDeviceExtensions(const VkPhysicalDevice & device)
 #pragma region vulkan_pipeline
 
 
-void VulkanLoader::vulkanCreateCommandPool()
+void VulkanLoader::vulkanCreateCommandPool(QueueFamilyIndices queueFamilyIndices)
 {
-    QueueFamilyIndices queueFamilyIndices = findQueueFamilies(vkPhysicalDevice);
-
     // create info: command pool
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -511,53 +506,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanLoader::debugCallback(
 
 #pragma endregion vulkan_validation
 
-void VulkanLoader::vulkanLoadSurface()
+void VulkanLoader::Load(VulkanWindow & vulkanWindow)
 {
-    // create native surface
-    Display* x11Display = glfwGetX11Display();
-    if (!x11Display) {
-        std::cout << "error: vulkan: failed to create window 32 surface!";
-        return;
-    }
-    xcb_connection_t* xcbConnection = XGetXCBConnection(x11Display);
-    xcb_window_t xcbWindow = glfwGetX11Window(window);
-
-    VkXcbSurfaceCreateInfoKHR createInfo = {};
-    createInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
-    createInfo.pNext = NULL;
-    createInfo.flags = 0;
-    createInfo.connection = xcbConnection;
-    createInfo.window = xcbWindow;
-
-    VkResult resultWindows = vkCreateXcbSurfaceKHR(vkInstance, &createInfo, nullptr, &vkSurface);
-
-    if(resultWindows != VK_SUCCESS)
-    {
-        std::cout << "error: vulkan: failed to create surface!";
-        return;
-    }
-
-    // create glfw surface from native surface
-    VkResult resultGlfw = glfwCreateWindowSurface(vkInstance, window, nullptr, &vkSurface);
-    if(resultGlfw != VK_SUCCESS)
-    {
-        std::cout << "error: vulkan: failed to create glfw window surface!";
-        return;
-    }
-}
-
-void VulkanLoader::Load()
-{
-    // init glfw
-    glfwInit();
-
-    // set hints
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-    // create window
-    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Vulkan", nullptr, nullptr);
-
     // check validation layers
     if(enableValidationLayers && !vulkanFoundValidationLayers())
     {
@@ -565,21 +515,27 @@ void VulkanLoader::Load()
         return;
     }
 
-    vulkanCreateInstance();
+    this->pSwapchain = new SwapChain();
+
+    vulkanCreateInstance(vulkanWindow);
     vulkanLoadDebugMessenger();
-    vulkanLoadSurface();
+    //vulkanLoadSurface();
+
+    vulkanWindow.CreateSurface(vkInstance, vkSurface);
+
     vulkanLoadPhysicalDevice();
-    vulkanCreateLogicalDevice();
+    
+    QueueFamilyIndices queueFamilyIndices = findQueueFamilies(vkPhysicalDevice, vkSurface);
+    vulkanCreateLogicalDevice(this->vkPhysicalDevice, queueFamilyIndices);
 
     //vulkanCreateSwapChain();
     //vulkanCreateImageViews();
-
-    this->pSwapchain = new SwapChain(
+    
+    this->pSwapchain->Load(
         vkDevice,
         vkPhysicalDevice,
         vkSurface,
-        window);
-    this->pSwapchain->Load();
+        vulkanWindow.GetWindow());
 
     this->pRenderPipeline = new RenderPipeline(
         vkDevice, 
@@ -587,7 +543,7 @@ void VulkanLoader::Load()
         this->pSwapchain->GetImageViews());
     this->pRenderPipeline->Load();
     
-    vulkanCreateCommandPool();
+    vulkanCreateCommandPool(queueFamilyIndices);
     vulkanCreateCommandBuffer();
 
     vulkanCreateSyncObjects();
@@ -668,10 +624,10 @@ void VulkanLoader::Cleanup()
     // command pool
     vkDestroyCommandPool(vkDevice, vkCommandPool, nullptr);
 
-    this->pRenderPipeline->CleanUp();
+    pRenderPipeline->CleanUp();
 
     // images & swapchain
-    this->pSwapchain->CleanUp();
+    pSwapchain->CleanUp(vkDevice);
 
     // devices
     vkDestroyDevice(vkDevice, nullptr);
@@ -679,11 +635,9 @@ void VulkanLoader::Cleanup()
     // debug
     vulkanDestroyDebugMessenger();
 
-    // instance
+    // surface
     vkDestroySurfaceKHR(vkInstance, vkSurface, nullptr);
-    vkDestroyInstance(vkInstance, nullptr);
 
-    // glfw
-    glfwDestroyWindow(window);
-    glfwTerminate();
+    //instance
+    vkDestroyInstance(vkInstance, nullptr);
 }

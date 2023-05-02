@@ -1,44 +1,29 @@
-//
-// Created by Benjamin on 14/11/2022.
-//
-
-#ifndef ARCTIC_VULKANLOADER_H
-#define ARCTIC_VULKANLOADER_H
+#pragma once
 
 #include <vector>
 #include <optional>
 #include <set>
 #include <vulkan/vulkan_core.h>
 
+class VulkanWindow;
 class RenderPipeline;
 class SwapChain;
 
-class GLFWwindow;
 
 class VulkanLoader
 {
 public:
-    void Load();
+    void Load(VulkanWindow & vulkanWindow);
     void Draw();
     void Cleanup();
 
-    GLFWwindow* GetWindow() {
-        return window;
-    }
-
 private:
-    // glfw
-    const uint32_t WINDOW_WIDTH = 1280;
-    const uint32_t WINDOW_HEIGHT = 720;
-    GLFWwindow* window = nullptr;
 
     // vulkan
     VkInstance vkInstance = nullptr;
 
     VkPhysicalDevice vkPhysicalDevice = VK_NULL_HANDLE;
     VkDevice vkDevice = VK_NULL_HANDLE;
-
-    VkSurfaceKHR vkSurface;
 
     VkQueue vkGraphicsQueue;
     VkQueue vkPresentQueue;
@@ -66,29 +51,29 @@ private:
         }
     };
 
+    VkSurfaceKHR vkSurface;
     SwapChain* pSwapchain;
     RenderPipeline* pRenderPipeline;
 
-    void vulkanCreateInstance();
+    void vulkanCreateInstance(VulkanWindow & vulkanWindow);
     void vulkanLoadDebugMessenger();
-    void vulkanLoadSurface();
     void vulkanLoadPhysicalDevice();
-    void vulkanCreateLogicalDevice();
+    void vulkanCreateLogicalDevice(const VkPhysicalDevice & vkPhysicalDevice, QueueFamilyIndices indices);
 
-    void vulkanCreateCommandPool();
+    void vulkanCreateCommandPool(QueueFamilyIndices indices);
     void vulkanCreateCommandBuffer();
     void vulkanCreateSyncObjects();
     void vulkanRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-    bool vulkanCreateShaderModule(const std::vector<char>& code, VkShaderModule& shaderModule);
 
     // devices
-    std::vector<const char*> vulkanGetRequiredExtensions();
+    std::vector<const char*> vulkanGetRequiredExtensions(const VulkanWindow & vulkanWindow);
     bool isVkDeviceSuitable(const VkPhysicalDevice& device,
+                            const VkSurfaceKHR & vkSurface,
                             VkPhysicalDeviceProperties deviceProperties,
                             VkPhysicalDeviceFeatures deviceFeatures,
-                            QueueFamilyIndices queueFamilyIndices);
-    QueueFamilyIndices findQueueFamilies(const VkPhysicalDevice& device);
-    bool findRequiredDeviceExtensions(const VkPhysicalDevice& device);
+                            QueueFamilyIndices queueFamilyIndices) const;
+    QueueFamilyIndices findQueueFamilies(const VkPhysicalDevice& device, const VkSurfaceKHR & surface);
+    bool findRequiredDeviceExtensions(const VkPhysicalDevice& device) const;
 
     // validation layers
     const bool enableValidationLayers = false;
@@ -115,5 +100,3 @@ private:
             const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
             void* pUserData);
 };
-
-#endif //ARCTIC_VULKANLOADER_H

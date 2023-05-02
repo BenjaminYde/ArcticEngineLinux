@@ -12,53 +12,43 @@ struct SwapChainDeviceSupport
 
 struct SwapChainData
 {
+    uint32_t imageCount;
     VkFormat imageFormat;
     VkExtent2D extent;
 };
-
-class SwapChainValidator
-{
-public:
-    static SwapChainDeviceSupport QuerySwapChainSupport(const VkPhysicalDevice &device, const VkSurfaceKHR & vkSurface);
-};
-
 
 class GLFWwindow;
 
 class SwapChain
 {
 public:
-    // todo: move constructor members to "Load() function"
-    // todo: move constructor members to "Load() function"
-    // todo: move constructor members to "Load() function"
-    SwapChain(
+
+    SwapChainDeviceSupport QuerySwapChainSupport(const VkPhysicalDevice & device, const VkSurfaceKHR & vkSurface);
+
+    void Load(
         const VkDevice &vkDevice, 
         const VkPhysicalDevice &vkPhysicalDevice, 
         const VkSurfaceKHR & vkSurface,
         GLFWwindow* window);
 
-    void Load();
-    void CleanUp();
+    void CleanUp(const VkDevice &vkDevice);
 
     const SwapChainData GetData();
     const VkSwapchainKHR &GetSwapChain();
     const std::vector<VkImageView> &GetImageViews();
 
 private:
-    void createSwapChain();
-    void createImageViews();
+    void createSwapChain(
+        const VkDevice & vkDevice, 
+        const VkPhysicalDevice & vkPhysicalDevice, 
+        const VkSurfaceKHR & vkSurface,
+        GLFWwindow* window);
+
+    void createImageViews(const VkDevice &vkDevice);
 
     VkSurfaceFormatKHR selectSwapChainSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
     VkPresentModeKHR selectSwapChainPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
-    VkExtent2D selectSwapChainExtent(const VkSurfaceCapabilitiesKHR &capabilities);
-
-    // todo: remove members
-    // todo: remove members
-    // todo: remove members
-    VkDevice vkDevice;
-    VkPhysicalDevice vkPhysicalDevice;
-    VkSurfaceKHR vkSurface;
-    GLFWwindow* window = nullptr;
+    VkExtent2D selectSwapChainExtent(GLFWwindow* window, const VkSurfaceCapabilitiesKHR &capabilities);
 
     SwapChainData swapChainData;
 

@@ -3,9 +3,9 @@
 int main()
 {
     ArcticEngine engine;
-    engine.initialize();
-    engine.run();
-    engine.cleanup();
+    engine.Initialize();
+    engine.Run();
+    engine.Cleanup();
 
     return 0;
 }
