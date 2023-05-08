@@ -23,7 +23,4 @@ private:
     const uint32_t WINDOW_WIDTH = 1280;
     const uint32_t WINDOW_HEIGHT = 720;
     GLFWwindow* window = nullptr;
-
-    VkInstance vkInstance;
-    VkSurfaceKHR vkSurface;
 };

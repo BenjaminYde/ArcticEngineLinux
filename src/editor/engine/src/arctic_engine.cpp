@@ -1,5 +1,6 @@
 #include <GLFW/glfw3.h>
 #include "vulkan_loader.h"
+#include "renderloop.h"
 #include "vulkan_window.h"
 #include "engine/arctic_engine.h"
 
@@ -13,7 +14,7 @@ void ArcticEngine::Run()
         glfwPollEvents();
 
         // draw
-        vulkanLoader->Draw();
+        pRenderLoop->Draw();
     }
 }
 
@@ -24,13 +25,20 @@ void ArcticEngine::Initialize()
     pVulkanWindow->CreateWindow();
 
     // load vulkan
+    // todo: move load to constructor
+    // todo: move load to constructor
+    // todo: move load to constructor
     vulkanLoader = new VulkanLoader();
-    vulkanLoader->Load(*pVulkanWindow);
+    pRenderLoop = nullptr;
+    vulkanLoader->Load(*pVulkanWindow, pRenderLoop);
 }
 
 void ArcticEngine::Cleanup()
 {
     // cleanup vulkan
+    pRenderLoop->CleanUp();
+    delete pRenderLoop;
+
     vulkanLoader->Cleanup();
     delete vulkanLoader;
 
@@ -38,3 +46,4 @@ void ArcticEngine::Cleanup()
     pVulkanWindow->CleanupWindow();
     delete pVulkanWindow;
 }
+

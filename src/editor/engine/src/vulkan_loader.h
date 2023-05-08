@@ -8,13 +8,12 @@
 class VulkanWindow;
 class RenderPipeline;
 class SwapChain;
-
+class RenderLoop;
 
 class VulkanLoader
 {
 public:
-    void Load(VulkanWindow & vulkanWindow);
-    void Draw();
+    void Load(VulkanWindow & vulkanWindow, RenderLoop* &renderLoop);
     void Cleanup();
 
 private:
@@ -30,10 +29,6 @@ private:
 
     VkCommandPool vkCommandPool;
     VkCommandBuffer vkCommandBuffer;
-
-    VkSemaphore imageAvailableSemaphore;
-    VkSemaphore renderFinishedSemaphore;
-    VkFence isDoneRenderingFence;
 
     const std::vector<const char*> requiredDeviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
@@ -62,8 +57,6 @@ private:
 
     void vulkanCreateCommandPool(QueueFamilyIndices indices);
     void vulkanCreateCommandBuffer();
-    void vulkanCreateSyncObjects();
-    void vulkanRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
     // devices
     std::vector<const char*> vulkanGetRequiredExtensions(const VulkanWindow & vulkanWindow);

@@ -23,37 +23,27 @@ target_sources(${TARGET}
         ${INCLUDE_DIRS_INTERNAL}/arctic_engine.h
         PRIVATE
         ${SRC_DIR}/arctic_engine.cpp
-        ${SRC_DIR}/vulkan_loader.cpp
+        ${SRC_DIR}/renderloop.cpp
         ${SRC_DIR}/renderpipeline.cpp
         ${SRC_DIR}/swapchain.cpp
-        ${SRC_DIR}/vulkan_window.cpp)
+        ${SRC_DIR}/vulkan_loader.cpp
+        ${SRC_DIR}/vulkan_window.cpp
+        )
 
 # set includes
 target_include_directories(${TARGET}
         PRIVATE
         ${INCLUDE_DIRS})
 
-# check platform
-#if(WIN32)
-#    # we are in windows
-#    target_compile_definitions(${TARGET} PUBLIC -DWIN32)
-#
-#    # disable min max macro in windows headers
-#    # https://stackoverflow.com/questions/27442885/syntax-error-with-stdnumeric-limitsmax
-#    target_compile_definitions(${TARGET} PUBLIC -DNOMINMAX)
-#else()
-#    # throw error: no other OS supported
-#    message(FATAL_ERROR "Project must be compiled on Windows!")
-#endif()
-
-#target_compile_options(${TARGET} PUBLIC /EHs) # enable exceptions
-
 # link packages
 FindPackage_Vulkan(${TARGET})
 FindPackage_GLFW(  ${TARGET})
 FindPackage_GLM(   ${TARGET})
 FindPackage_FMT(   ${TARGET})
+
+# add module: x11
 find_package(X11 REQUIRED)
+target_link_libraries(${TARGET} PRIVATE X11::X11_xcb)
 
 # add module: utilities
 target_link_libraries(${TARGET} PRIVATE Utilities X11::X11_xcb)

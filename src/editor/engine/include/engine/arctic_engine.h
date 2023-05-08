@@ -2,6 +2,7 @@
 
 class VulkanLoader;
 class VulkanWindow;
+class RenderLoop;
 
 class ArcticEngine
 {
@@ -11,6 +12,7 @@ public:
     void Cleanup();
 
 private:
-    VulkanLoader* vulkanLoader;
     VulkanWindow* pVulkanWindow;
+    VulkanLoader* vulkanLoader;
+    RenderLoop* pRenderLoop;
 };

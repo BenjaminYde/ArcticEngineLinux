@@ -66,9 +66,6 @@ void VulkanWindow::CreateSurface(const VkInstance & vkInstance, VkSurfaceKHR & v
         std::cout << "error: vulkan: failed to create glfw window surface!";
         return;
     }
-
-    // set instance
-    this->vkInstance = vkInstance;
 }
 
 void VulkanWindow::CleanupWindow()

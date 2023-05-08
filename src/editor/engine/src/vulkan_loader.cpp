@@ -2,16 +2,12 @@
 #include "utilities/file_utility.h"
 #include "utilities/application.h"
 
-//#include <GLFW/glfw3.h>
-//#include <GLFW/glfw3native.h>
 #include <iostream>
 #include <fmt/core.h>
 
-//#include <xcb/xcb.h>
-//#include <X11/Xlib-xcb.h>
-
 #include "vulkan_window.h"
 #include "renderpipeline.h"
+#include "renderloop.h"
 #include "swapchain.h"
 
 void VulkanLoader::vulkanCreateInstance(VulkanWindow & vulkanWindow)
@@ -216,7 +212,7 @@ bool VulkanLoader::isVkDeviceSuitable(
 
     // check if swap chain is valid
     // >> see device & surface
-    SwapChainDeviceSupport swapChainSupport = this->pSwapchain->QuerySwapChainSupport(device, vkSurface);
+    SwapChainDeviceSupport swapChainSupport = pSwapchain->QuerySwapChainSupport(device, vkSurface);
     bool isSwapChainValid = !swapChainSupport.surfaceFormats.empty() && !swapChainSupport.presentModes.empty();
     if(!isSwapChainValid)
         return false;
@@ -309,91 +305,6 @@ void VulkanLoader::vulkanCreateCommandBuffer()
     if (result != VK_SUCCESS)
     {
         std::cout << "error: vulkan: failed to create command buffer!";
-        return;
-    }
-}
-
-void VulkanLoader::vulkanRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
-{
-    // command buffer: begin
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = 0; // optional
-    beginInfo.pInheritanceInfo = nullptr; // optional
-
-    VkResult resultBeginCommandBuffer = vkBeginCommandBuffer(commandBuffer, &beginInfo);
-    if (resultBeginCommandBuffer != VK_SUCCESS)
-    {
-        std::cout << "error: vulkan: failed to begin command buffer!";
-        return;
-    }
-
-    // get swapchain data
-    SwapChainData swapChainData = this->pSwapchain->GetData();
-
-    // command buffer: begin render pass
-    VkRenderPassBeginInfo renderPassBeginInfo{};
-    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassBeginInfo.renderPass = this->pRenderPipeline->GetRenderPass();
-    renderPassBeginInfo.framebuffer = this->pRenderPipeline->GetFrameBuffer(imageIndex);
-
-    renderPassBeginInfo.renderArea.offset = VkOffset2D {0, 0};
-    renderPassBeginInfo.renderArea.extent = swapChainData.extent;
-
-    VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
-    renderPassBeginInfo.clearValueCount = 1;
-    renderPassBeginInfo.pClearValues = &clearColor;
-
-    vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-    // command buffer: bind to pipeline
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pRenderPipeline->GetPipeline());
-
-    // command buffer: set viewport
-    VkViewport viewport{};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = (float) swapChainData.extent.width;
-    viewport.height = (float) swapChainData.extent.height;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-    // command buffer: set scissor
-    VkRect2D scissor{};
-    scissor.offset = {0, 0};
-    scissor.extent = swapChainData.extent;
-    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-    // command buffer: draw
-    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-
-    // command buffer: end render pass
-    vkCmdEndRenderPass(commandBuffer);
-
-    // command buffer: end
-    VkResult resultEndCommandBuffer = vkEndCommandBuffer(commandBuffer);
-    if (resultEndCommandBuffer != VK_SUCCESS)
-    {
-        std::cout << "error: vulkan: failed to end command buffer!";
-        return;
-    }
-}
-
-void VulkanLoader::vulkanCreateSyncObjects()
-{
-    VkSemaphoreCreateInfo semaphoreInfo{};
-    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-    VkFenceCreateInfo fenceInfo{};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // is signaled on start
-
-    if (vkCreateSemaphore(vkDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
-        vkCreateSemaphore(vkDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS ||
-        vkCreateFence(vkDevice, &fenceInfo, nullptr, &isDoneRenderingFence) != VK_SUCCESS)
-    {
-        std::cout << "error: vulkan: failed to create sync objects!";
         return;
     }
 }
@@ -506,7 +417,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanLoader::debugCallback(
 
 #pragma endregion vulkan_validation
 
-void VulkanLoader::Load(VulkanWindow & vulkanWindow)
+void VulkanLoader::Load(VulkanWindow & vulkanWindow, RenderLoop* &renderLoop)
 {
     // check validation layers
     if(enableValidationLayers && !vulkanFoundValidationLayers())
@@ -515,111 +426,52 @@ void VulkanLoader::Load(VulkanWindow & vulkanWindow)
         return;
     }
 
-    this->pSwapchain = new SwapChain();
-
     vulkanCreateInstance(vulkanWindow);
     vulkanLoadDebugMessenger();
     //vulkanLoadSurface();
 
     vulkanWindow.CreateSurface(vkInstance, vkSurface);
 
+    pSwapchain = new SwapChain();
+
     vulkanLoadPhysicalDevice();
     
     QueueFamilyIndices queueFamilyIndices = findQueueFamilies(vkPhysicalDevice, vkSurface);
-    vulkanCreateLogicalDevice(this->vkPhysicalDevice, queueFamilyIndices);
-
-    //vulkanCreateSwapChain();
-    //vulkanCreateImageViews();
+    vulkanCreateLogicalDevice(vkPhysicalDevice, queueFamilyIndices);
     
-    this->pSwapchain->Load(
+    // create swapchain
+    pSwapchain->Load(
         vkDevice,
         vkPhysicalDevice,
         vkSurface,
         vulkanWindow.GetWindow());
 
-    this->pRenderPipeline = new RenderPipeline(
+    // create render pipeline
+    pRenderPipeline = new RenderPipeline(
         vkDevice, 
-        this->pSwapchain->GetData(), 
-        this->pSwapchain->GetImageViews());
-    this->pRenderPipeline->Load();
+        pSwapchain->GetData(), 
+        pSwapchain->GetImageViews());
+    pRenderPipeline->Load();
     
+    // create command pool and buffer
     vulkanCreateCommandPool(queueFamilyIndices);
     vulkanCreateCommandBuffer();
 
-    vulkanCreateSyncObjects();
-}
-
-void VulkanLoader::Draw()
-{
-    // wait until previous frame is finished
-    //> no timeout
-    vkWaitForFences(vkDevice, 1, &isDoneRenderingFence, VK_TRUE, UINT64_MAX);
-
-    // reset fence state to zero
-    vkResetFences(vkDevice, 1, &isDoneRenderingFence);
-
-    // acquire next image from swap chain
-    uint32_t availableImageIndex;
-    vkAcquireNextImageKHR(vkDevice, this->pSwapchain->GetSwapChain(), UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &availableImageIndex);
-
-    // record command buffer
-    vkResetCommandBuffer(vkCommandBuffer, 0);
-    vulkanRecordCommandBuffer(vkCommandBuffer, availableImageIndex);
-
-    // create info: command buffer submit 
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    //> specify semaphores to wait on before execution
-    VkSemaphore waitSemaphores[] = { imageAvailableSemaphore };
-    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = waitSemaphores;
-    submitInfo.pWaitDstStageMask = waitStages;
-
-    //> specify command buffer
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &vkCommandBuffer;
-
-    //> signal semaphores on finish execution
-    VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = signalSemaphores;
-
-    // submit command buffer to graphics queue
-    VkResult resultQueueSubmit = vkQueueSubmit(vkGraphicsQueue, 1, &submitInfo, isDoneRenderingFence);
-    if(resultQueueSubmit != VK_SUCCESS)
-    {
-        std::cout << "error: vulkan: failed to submit command buffer to graphics queue!";
-        return;
-    }
-
-    // create info: present khr
-    VkPresentInfoKHR presentInfo{};
-    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-    presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = signalSemaphores;
-
-    VkSwapchainKHR swapChains[] = { this->pSwapchain->GetSwapChain() };
-    presentInfo.swapchainCount = 1;
-    presentInfo.pSwapchains = swapChains;
-    presentInfo.pImageIndices = &availableImageIndex;
-    presentInfo.pResults = nullptr; // Optional
-
-    // queue present khr
-    vkQueuePresentKHR(vkPresentQueue, &presentInfo);
+    // create render loop
+    renderLoop = new RenderLoop(
+        vkDevice, 
+        pSwapchain, 
+        pRenderPipeline, 
+        vkCommandPool, 
+        vkCommandBuffer, 
+        vkGraphicsQueue, 
+        vkPresentQueue);
 }
 
 void VulkanLoader::Cleanup()
 {
     // wait until device is not executing work
     vkDeviceWaitIdle(vkDevice);
-
-    // syncing
-    vkDestroySemaphore(vkDevice, imageAvailableSemaphore, nullptr);
-    vkDestroySemaphore(vkDevice, renderFinishedSemaphore, nullptr);
-    vkDestroyFence(vkDevice, isDoneRenderingFence, nullptr);
 
     // command pool
     vkDestroyCommandPool(vkDevice, vkCommandPool, nullptr);

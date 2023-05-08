@@ -15,10 +15,8 @@
 	"runArgs": [
 		"--network=host",
 		"--privileged",
-		"--gpus",
-		"all",
-		"--runtime",
-		"nvidia"
+		"--gpus","all",
+		"--runtime","nvidia"
 	],
 	"customizations": {
 		"vscode": {
@@ -32,5 +30,6 @@
 				"marlongerson.jetbrains-icons"
 			]
 		}
-	}
+	},
+	"initializeCommand": "xhost +local:"
 }
