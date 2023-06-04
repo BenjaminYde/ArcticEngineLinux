@@ -5,7 +5,17 @@
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
-SwapChainDeviceSupport SwapChain::QuerySwapChainSupport(const VkPhysicalDevice & device, const VkSurfaceKHR & vkSurface)
+void SwapChain::Load(
+    const VkDevice &vkDevice, 
+    const VkPhysicalDevice & vkPhysicalDevice,
+    const VkSurfaceKHR & vkSurface,
+    GLFWwindow* window)
+{
+    createSwapChain(vkDevice, vkPhysicalDevice, vkSurface, window);
+    createImageViews(vkDevice);
+}
+
+SwapChainDeviceSupport SwapChain::QuerySwapChainSupport(const VkPhysicalDevice & device, const VkSurfaceKHR & vkSurface) const
 {
     SwapChainDeviceSupport details;
 
@@ -31,16 +41,6 @@ SwapChainDeviceSupport SwapChain::QuerySwapChainSupport(const VkPhysicalDevice &
     }
 
     return details;
-}
-
-void SwapChain::Load(
-    const VkDevice &vkDevice, 
-    const VkPhysicalDevice & vkPhysicalDevice,
-    const VkSurfaceKHR & vkSurface,
-    GLFWwindow* window)
-{
-    createSwapChain(vkDevice, vkPhysicalDevice, vkSurface, window);
-    createImageViews(vkDevice);
 }
 
 void SwapChain::CleanUp(const VkDevice &vkDevice)

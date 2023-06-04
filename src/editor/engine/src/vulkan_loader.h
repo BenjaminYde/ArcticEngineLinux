@@ -13,8 +13,10 @@ class RenderLoop;
 class VulkanLoader
 {
 public:
-    void Load(VulkanWindow & vulkanWindow, RenderLoop* &renderLoop);
+    VulkanLoader(VulkanWindow & vulkanWindow);
     void Cleanup();
+
+    const RenderLoop& GetRenderLoop();
 
 private:
 
@@ -26,9 +28,6 @@ private:
 
     VkQueue vkGraphicsQueue;
     VkQueue vkPresentQueue;
-
-    VkCommandPool vkCommandPool;
-    VkCommandBuffer vkCommandBuffer;
 
     const std::vector<const char*> requiredDeviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
@@ -49,19 +48,23 @@ private:
     VkSurfaceKHR vkSurface;
     SwapChain* pSwapchain;
     RenderPipeline* pRenderPipeline;
+    RenderLoop* pRenderLoop;
 
     void vulkanCreateInstance(VulkanWindow & vulkanWindow);
     void vulkanLoadDebugMessenger();
-    void vulkanLoadPhysicalDevice();
-    void vulkanCreateLogicalDevice(const VkPhysicalDevice & vkPhysicalDevice, QueueFamilyIndices indices);
+    
+    void vulkanLoadPhysicalDevice(
+        const VkInstance& instance,
+        const VkSurfaceKHR& surface,
+        const SwapChain& swapChain);
 
-    void vulkanCreateCommandPool(QueueFamilyIndices indices);
-    void vulkanCreateCommandBuffer();
+    void vulkanCreateLogicalDevice(const VkPhysicalDevice & vkPhysicalDevice, QueueFamilyIndices indices);
 
     // devices
     std::vector<const char*> vulkanGetRequiredExtensions(const VulkanWindow & vulkanWindow);
     bool isVkDeviceSuitable(const VkPhysicalDevice& device,
                             const VkSurfaceKHR & vkSurface,
+                            const SwapChain & swapChain,
                             VkPhysicalDeviceProperties deviceProperties,
                             VkPhysicalDeviceFeatures deviceFeatures,
                             QueueFamilyIndices queueFamilyIndices) const;

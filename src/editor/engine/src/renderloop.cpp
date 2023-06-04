@@ -8,23 +8,24 @@ RenderLoop::RenderLoop(
     VkDevice vkDevice, 
     SwapChain* swapChain, 
     RenderPipeline* renderPipeline, 
-    VkCommandPool vkCommandPool, 
-    VkCommandBuffer vkCommandBuffer, 
     VkQueue graphicsQueue, 
     VkQueue presentQueue)
     :
     vkDevice(vkDevice),
     pSwapchain(swapChain),
     pRenderPipeline(renderPipeline),
-    vkCommandPool(vkCommandPool),
-    vkCommandBuffer(vkCommandBuffer),
     vkGraphicsQueue(graphicsQueue),
     vkPresentQueue(presentQueue)
 {
+    // create command pool and buffer
+    vulkanCreateCommandPool(renderPipeline->GetGraphicsFamilyIndex());
+    vulkanCreateCommandBuffer();
+
+    // syncing
     vulkanCreateSyncObjects();
 }
 
-void RenderLoop::Draw()
+void RenderLoop::Render()
 {
     // wait until previous frame is finished
     //> no timeout
@@ -95,6 +96,44 @@ void RenderLoop::CleanUp()
     vkDestroySemaphore(vkDevice, imageAvailableSemaphore, nullptr);
     vkDestroySemaphore(vkDevice, renderFinishedSemaphore, nullptr);
     vkDestroyFence(vkDevice, isDoneRenderingFence, nullptr);
+
+    // command pool & buffer
+    vkDestroyCommandPool(vkDevice, vkCommandPool, nullptr);
+}
+
+void RenderLoop::vulkanCreateCommandPool(uint32_t graphicsFamilyIndex)
+{
+    // create info: command pool
+    VkCommandPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // we record a command buffer every frame, so we want to be able to reset and re-record
+    poolInfo.queueFamilyIndex = graphicsFamilyIndex;
+
+    // create command pool
+    VkResult result = vkCreateCommandPool(vkDevice, &poolInfo, nullptr, &vkCommandPool);
+    if (result != VK_SUCCESS)
+    {
+        std::cout << "error: vulkan: failed to create command pool!";
+        return;
+    }
+}
+
+void RenderLoop::vulkanCreateCommandBuffer()
+{
+    // create info: command buffer allocation
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = vkCommandPool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY; // can be submitted to a queue for execution, but cannot be called from other command buffers
+    allocInfo.commandBufferCount = 1;
+
+    // create command buffer
+    VkResult result = vkAllocateCommandBuffers(vkDevice, &allocInfo, &vkCommandBuffer);
+    if (result != VK_SUCCESS)
+    {
+        std::cout << "error: vulkan: failed to create command buffer!";
+        return;
+    }
 }
 
 void RenderLoop::vulkanRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)

@@ -10,6 +10,86 @@
 #include "renderloop.h"
 #include "swapchain.h"
 
+const RenderLoop& VulkanLoader::GetRenderLoop()
+{
+    return *pRenderLoop;
+}
+
+VulkanLoader::VulkanLoader(VulkanWindow & vulkanWindow)
+{
+    // check validation layers
+    if(enableValidationLayers && !vulkanFoundValidationLayers())
+    {
+        std::cout << "error: vulkan: validation layers requested, but not available!";
+        return;
+    }
+
+    vulkanCreateInstance(vulkanWindow);
+    vulkanLoadDebugMessenger();
+
+    vulkanWindow.CreateSurface(vkInstance, vkSurface);
+
+    pSwapchain = new SwapChain();
+
+    vulkanLoadPhysicalDevice(vkInstance, vkSurface, *pSwapchain);
+    
+    QueueFamilyIndices queueFamilyIndices = findQueueFamilies(vkPhysicalDevice, vkSurface);
+    vulkanCreateLogicalDevice(vkPhysicalDevice, queueFamilyIndices);
+    
+    // create swapchain
+    pSwapchain->Load(
+        vkDevice,
+        vkPhysicalDevice,
+        vkSurface,
+        vulkanWindow.GetWindow());
+
+    // create render pipeline
+    pRenderPipeline = new RenderPipeline(
+        vkDevice,
+        queueFamilyIndices.graphicsFamily.value(),
+        pSwapchain->GetData(), 
+        pSwapchain->GetImageViews());
+    pRenderPipeline->Load();
+    
+    // create render loop
+    pRenderLoop = new RenderLoop(
+        vkDevice, 
+        pSwapchain, 
+        pRenderPipeline, 
+        vkGraphicsQueue, 
+        vkPresentQueue);
+}
+
+void VulkanLoader::Cleanup()
+{
+    // wait until device is not executing work
+    vkDeviceWaitIdle(vkDevice);
+
+    // render loop
+    pRenderLoop->CleanUp();
+    delete pRenderLoop;
+
+    // render pipeline
+    pRenderPipeline->CleanUp();
+    delete pRenderPipeline;
+
+    // images & swapchain
+    pSwapchain->CleanUp(vkDevice);
+    delete pSwapchain;
+
+    // devices
+    vkDestroyDevice(vkDevice, nullptr);
+
+    // debug
+    vulkanDestroyDebugMessenger();
+
+    // surface
+    vkDestroySurfaceKHR(vkInstance, vkSurface, nullptr);
+
+    //instance
+    vkDestroyInstance(vkInstance, nullptr);
+}
+
 void VulkanLoader::vulkanCreateInstance(VulkanWindow & vulkanWindow)
 {
     // create app info
@@ -90,11 +170,14 @@ std::vector<const char*> VulkanLoader::vulkanGetRequiredExtensions(const VulkanW
 
 #pragma region vulkan_devices
 
-void VulkanLoader::vulkanLoadPhysicalDevice()
+void VulkanLoader::vulkanLoadPhysicalDevice(
+    const VkInstance& instance,
+    const VkSurfaceKHR& surface,
+    const SwapChain& swapChain)
 {
     // get available physical devices
     uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(vkInstance, &deviceCount, nullptr);
+    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
     if(deviceCount == 0)
     {
@@ -103,7 +186,7 @@ void VulkanLoader::vulkanLoadPhysicalDevice()
     }
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(vkInstance, &deviceCount, devices.data());
+    vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
     // find suitable device
     // todo: idea: could add score implementation (more features = better score), select device with highest score
@@ -118,10 +201,10 @@ void VulkanLoader::vulkanLoadPhysicalDevice()
         // get data of device
         vkGetPhysicalDeviceProperties(device, &deviceProperties);
         vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
-        queueFamilyIndices = findQueueFamilies(device, vkSurface);
+        queueFamilyIndices = findQueueFamilies(device, surface);
 
         // break loop when found suitable device
-        if(isVkDeviceSuitable(device, vkSurface, deviceProperties, deviceFeatures, queueFamilyIndices))
+        if(isVkDeviceSuitable(device, surface, swapChain ,deviceProperties, deviceFeatures, queueFamilyIndices))
         {
             vkPhysicalDevice = device;
             break;
@@ -188,7 +271,8 @@ void VulkanLoader::vulkanCreateLogicalDevice(const VkPhysicalDevice & vkPhysical
 
 bool VulkanLoader::isVkDeviceSuitable(
         const VkPhysicalDevice & device,
-        const VkSurfaceKHR & vkSurface,
+        const VkSurfaceKHR & surface,
+        const SwapChain & swapChain,
         VkPhysicalDeviceProperties deviceProperties,
         VkPhysicalDeviceFeatures deviceFeatures,
         QueueFamilyIndices queueFamilyIndices) const
@@ -212,7 +296,7 @@ bool VulkanLoader::isVkDeviceSuitable(
 
     // check if swap chain is valid
     // >> see device & surface
-    SwapChainDeviceSupport swapChainSupport = pSwapchain->QuerySwapChainSupport(device, vkSurface);
+    SwapChainDeviceSupport swapChainSupport = swapChain.QuerySwapChainSupport(device, surface);
     bool isSwapChainValid = !swapChainSupport.surfaceFormats.empty() && !swapChainSupport.presentModes.empty();
     if(!isSwapChainValid)
         return false;
@@ -273,41 +357,6 @@ bool VulkanLoader::findRequiredDeviceExtensions(const VkPhysicalDevice & device)
 
 #pragma region vulkan_pipeline
 
-
-void VulkanLoader::vulkanCreateCommandPool(QueueFamilyIndices queueFamilyIndices)
-{
-    // create info: command pool
-    VkCommandPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // we record a command buffer every frame, so we want to be able to reset and re-record
-    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-
-    // create command pool
-    VkResult result = vkCreateCommandPool(vkDevice, &poolInfo, nullptr, &vkCommandPool);
-    if (result != VK_SUCCESS)
-    {
-        std::cout << "error: vulkan: failed to create command pool!";
-        return;
-    }
-}
-
-void VulkanLoader::vulkanCreateCommandBuffer()
-{
-    // create info: command buffer allocation
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = vkCommandPool;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY; // can be submitted to a queue for execution, but cannot be called from other command buffers
-    allocInfo.commandBufferCount = 1;
-
-    // create command buffer
-    VkResult result = vkAllocateCommandBuffers(vkDevice, &allocInfo, &vkCommandBuffer);
-    if (result != VK_SUCCESS)
-    {
-        std::cout << "error: vulkan: failed to create command buffer!";
-        return;
-    }
-}
 
 #pragma endregion vulkan_pipeline
 
@@ -416,80 +465,3 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanLoader::debugCallback(
 }
 
 #pragma endregion vulkan_validation
-
-void VulkanLoader::Load(VulkanWindow & vulkanWindow, RenderLoop* &renderLoop)
-{
-    // check validation layers
-    if(enableValidationLayers && !vulkanFoundValidationLayers())
-    {
-        std::cout << "error: vulkan: validation layers requested, but not available!";
-        return;
-    }
-
-    vulkanCreateInstance(vulkanWindow);
-    vulkanLoadDebugMessenger();
-    //vulkanLoadSurface();
-
-    vulkanWindow.CreateSurface(vkInstance, vkSurface);
-
-    pSwapchain = new SwapChain();
-
-    vulkanLoadPhysicalDevice();
-    
-    QueueFamilyIndices queueFamilyIndices = findQueueFamilies(vkPhysicalDevice, vkSurface);
-    vulkanCreateLogicalDevice(vkPhysicalDevice, queueFamilyIndices);
-    
-    // create swapchain
-    pSwapchain->Load(
-        vkDevice,
-        vkPhysicalDevice,
-        vkSurface,
-        vulkanWindow.GetWindow());
-
-    // create render pipeline
-    pRenderPipeline = new RenderPipeline(
-        vkDevice, 
-        pSwapchain->GetData(), 
-        pSwapchain->GetImageViews());
-    pRenderPipeline->Load();
-    
-    // create command pool and buffer
-    vulkanCreateCommandPool(queueFamilyIndices);
-    vulkanCreateCommandBuffer();
-
-    // create render loop
-    renderLoop = new RenderLoop(
-        vkDevice, 
-        pSwapchain, 
-        pRenderPipeline, 
-        vkCommandPool, 
-        vkCommandBuffer, 
-        vkGraphicsQueue, 
-        vkPresentQueue);
-}
-
-void VulkanLoader::Cleanup()
-{
-    // wait until device is not executing work
-    vkDeviceWaitIdle(vkDevice);
-
-    // command pool
-    vkDestroyCommandPool(vkDevice, vkCommandPool, nullptr);
-
-    pRenderPipeline->CleanUp();
-
-    // images & swapchain
-    pSwapchain->CleanUp(vkDevice);
-
-    // devices
-    vkDestroyDevice(vkDevice, nullptr);
-
-    // debug
-    vulkanDestroyDebugMessenger();
-
-    // surface
-    vkDestroySurfaceKHR(vkInstance, vkSurface, nullptr);
-
-    //instance
-    vkDestroyInstance(vkInstance, nullptr);
-}

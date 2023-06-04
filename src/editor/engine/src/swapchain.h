@@ -23,13 +23,13 @@ class SwapChain
 {
 public:
 
-    SwapChainDeviceSupport QuerySwapChainSupport(const VkPhysicalDevice & device, const VkSurfaceKHR & vkSurface);
-
     void Load(
         const VkDevice &vkDevice, 
         const VkPhysicalDevice &vkPhysicalDevice, 
         const VkSurfaceKHR & vkSurface,
         GLFWwindow* window);
+
+    SwapChainDeviceSupport QuerySwapChainSupport(const VkPhysicalDevice & device, const VkSurfaceKHR & vkSurface) const;
 
     void CleanUp(const VkDevice &vkDevice);
 

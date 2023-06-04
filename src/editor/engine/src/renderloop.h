@@ -12,12 +12,10 @@ public:
         VkDevice vkDevice,
         SwapChain* swapChain, 
         RenderPipeline* renderPipeline,
-        VkCommandPool vkCommandPool,
-        VkCommandBuffer vkCommandBuffer,
         VkQueue GraphicsQueue,
         VkQueue vkPresentQueue);
 
-    void Draw();
+    void Render();
     void CleanUp();
 
 private:
@@ -39,6 +37,12 @@ private:
     VkSemaphore renderFinishedSemaphore;
     VkFence isDoneRenderingFence;
 
+    // commands
+    void vulkanCreateCommandPool(uint32_t graphicsFamilyIndex);
+    void vulkanCreateCommandBuffer();
+
     void vulkanRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    
+    // syncing
     void vulkanCreateSyncObjects();
 };

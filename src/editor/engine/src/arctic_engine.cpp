@@ -12,9 +12,10 @@ void ArcticEngine::Run()
     {
         // check input
         glfwPollEvents();
-
-        // draw
-        pRenderLoop->Draw();
+    
+        // render
+        RenderLoop renderLoop = vulkanLoader->GetRenderLoop();
+        renderLoop.Render();
     }
 }
 
@@ -25,20 +26,12 @@ void ArcticEngine::Initialize()
     pVulkanWindow->CreateWindow();
 
     // load vulkan
-    // todo: move load to constructor
-    // todo: move load to constructor
-    // todo: move load to constructor
-    vulkanLoader = new VulkanLoader();
-    pRenderLoop = nullptr;
-    vulkanLoader->Load(*pVulkanWindow, pRenderLoop);
+    vulkanLoader = new VulkanLoader(*pVulkanWindow);
 }
 
 void ArcticEngine::Cleanup()
 {
     // cleanup vulkan
-    pRenderLoop->CleanUp();
-    delete pRenderLoop;
-
     vulkanLoader->Cleanup();
     delete vulkanLoader;
 

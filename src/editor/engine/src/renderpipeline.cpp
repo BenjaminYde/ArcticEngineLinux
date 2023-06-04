@@ -7,10 +7,12 @@
 
 RenderPipeline::RenderPipeline(
     const VkDevice & vkDevice, 
+    uint32_t graphicsFamilyIndex,
     const SwapChainData & swapChainData, 
     const std::vector<VkImageView> & swapChainImageViews)
     :
     vkDevice(vkDevice),
+    graphicsFamilyIndex(graphicsFamilyIndex),
     swapChainData(swapChainData),
     swapChainImageViews(swapChainImageViews)
 {
@@ -35,6 +37,11 @@ void RenderPipeline::CleanUp()
     vkDestroyPipeline(vkDevice, vkPipeline, nullptr);
     vkDestroyPipelineLayout(vkDevice, vkPipelineLayout, nullptr);
     vkDestroyRenderPass(vkDevice, vkRenderPass, nullptr);
+}
+
+uint32_t RenderPipeline::GetGraphicsFamilyIndex()
+{
+    return this->graphicsFamilyIndex;
 }
 
 const VkRenderPass &RenderPipeline::GetRenderPass()

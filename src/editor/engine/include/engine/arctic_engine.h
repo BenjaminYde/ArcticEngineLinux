@@ -2,7 +2,6 @@
 
 class VulkanLoader;
 class VulkanWindow;
-class RenderLoop;
 
 class ArcticEngine
 {
@@ -14,5 +13,4 @@ public:
 private:
     VulkanWindow* pVulkanWindow;
     VulkanLoader* vulkanLoader;
-    RenderLoop* pRenderLoop;
 };
