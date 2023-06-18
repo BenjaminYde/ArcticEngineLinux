@@ -1,8 +1,8 @@
-#include <GLFW/glfw3.h>
-#include "vulkan_loader.h"
-#include "renderloop.h"
-#include "vulkan_window.h"
 #include "engine/arctic_engine.h"
+#include <GLFW/glfw3.h>
+#include "arctic_vulkan/vulkan_loader.h"
+#include "arctic_vulkan/vulkan_renderloop.h"
+#include "arctic_vulkan/vulkan_window.h"
 
 void ArcticEngine::Run()
 {
@@ -14,7 +14,7 @@ void ArcticEngine::Run()
         glfwPollEvents();
     
         // render
-        RenderLoop renderLoop = vulkanLoader->GetRenderLoop();
+        VulkanRenderLoop renderLoop = vulkanLoader->GetRenderLoop();
         renderLoop.Render();
     }
 }

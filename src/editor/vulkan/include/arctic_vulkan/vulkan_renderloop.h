@@ -2,16 +2,16 @@
 
 #include <vulkan/vulkan_core.h>
 
-class SwapChain;
-class RenderPipeline;
+class VulkanSwapChain;
+class VulkanRenderPipeline;
 
-class RenderLoop
+class VulkanRenderLoop
 {
 public:
-    RenderLoop(
+    VulkanRenderLoop(
         VkDevice vkDevice,
-        SwapChain* swapChain, 
-        RenderPipeline* renderPipeline,
+        VulkanSwapChain* swapChain, 
+        VulkanRenderPipeline* renderPipeline,
         VkQueue GraphicsQueue,
         VkQueue vkPresentQueue);
 
@@ -22,8 +22,8 @@ private:
 
     // devices
     VkDevice vkDevice = VK_NULL_HANDLE;
-    SwapChain* pSwapchain;
-    RenderPipeline* pRenderPipeline;
+    VulkanSwapChain* pSwapchain;
+    VulkanRenderPipeline* pRenderPipeline;
 
     // commands
     VkCommandPool vkCommandPool;

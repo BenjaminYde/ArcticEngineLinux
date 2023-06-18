@@ -9,43 +9,42 @@ message("target is ${TARGET}")
 add_library(${TARGET} STATIC)
 
 # set variables
-set(INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}/include)
-set(INCLUDE_DIRS_INTERNAL ${INCLUDE_DIRS}/engine)
+set(INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include)
 set(SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src)
 
 # set properties
 set_target_properties(${TARGET} PROPERTIES
-        INCLUDE_DIRS ${INCLUDE_DIRS})
+        INCLUDE_DIR ${INCLUDE_DIR})
 
 # set sources
 target_sources(${TARGET}
         PUBLIC
-        ${INCLUDE_DIRS_INTERNAL}/arctic_engine.h
+        ${INCLUDE_DIR}/engine/arctic_engine.h
         PRIVATE
-        ${SRC_DIR}/arctic_engine.cpp
-        ${SRC_DIR}/renderloop.cpp
-        ${SRC_DIR}/renderpipeline.cpp
-        ${SRC_DIR}/swapchain.cpp
-        ${SRC_DIR}/vulkan_loader.cpp
-        ${SRC_DIR}/vulkan_window.cpp
+        ${SRC_DIR}/engine/arctic_engine.cpp
         )
 
 # set includes
 target_include_directories(${TARGET}
         PRIVATE
-        ${INCLUDE_DIRS})
+        ${INCLUDE_DIR}
+        )
 
-# link packages
-FindPackage_Vulkan(${TARGET})
 FindPackage_GLFW(  ${TARGET})
-FindPackage_GLM(   ${TARGET})
-FindPackage_FMT(   ${TARGET})
+FindPackage_Vulkan(${TARGET})
 
-# add module: x11
-find_package(X11 REQUIRED)
-target_link_libraries(${TARGET} PRIVATE X11::X11_xcb)
+# add module: arctic vulkan
+target_link_libraries(
+        ${TARGET} 
+        PRIVATE 
+        ArcticVulkan)
 
-# add module: utilities
-target_link_libraries(${TARGET} PRIVATE Utilities X11::X11_xcb)
-get_target_property(Utilties_INCLUDE_DIRS Utilities INCLUDE_DIRS)
-target_include_directories(${TARGET} PRIVATE ${Utilties_INCLUDE_DIRS})
+get_target_property(
+        ArcticVulkan_INCLUDE_DIR
+        ArcticVulkan
+        INCLUDE_DIR)
+
+target_include_directories(
+        ${TARGET} 
+        PRIVATE 
+        ${ArcticVulkan_INCLUDE_DIR})

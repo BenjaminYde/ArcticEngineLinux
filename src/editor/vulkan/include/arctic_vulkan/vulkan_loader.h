@@ -6,9 +6,9 @@
 #include <vulkan/vulkan_core.h>
 
 class VulkanWindow;
-class RenderPipeline;
-class SwapChain;
-class RenderLoop;
+class VulkanRenderPipeline;
+class VulkanSwapChain;
+class VulkanRenderLoop;
 
 class VulkanLoader
 {
@@ -16,7 +16,7 @@ public:
     VulkanLoader(VulkanWindow & vulkanWindow);
     void Cleanup();
 
-    const RenderLoop& GetRenderLoop();
+    const VulkanRenderLoop& GetRenderLoop();
 
 private:
 
@@ -46,9 +46,9 @@ private:
     };
 
     VkSurfaceKHR vkSurface;
-    SwapChain* pSwapchain;
-    RenderPipeline* pRenderPipeline;
-    RenderLoop* pRenderLoop;
+    VulkanSwapChain* pSwapchain;
+    VulkanRenderPipeline* pRenderPipeline;
+    VulkanRenderLoop* pRenderLoop;
 
     void vulkanCreateInstance(VulkanWindow & vulkanWindow);
     void vulkanLoadDebugMessenger();
@@ -56,7 +56,7 @@ private:
     void vulkanLoadPhysicalDevice(
         const VkInstance& instance,
         const VkSurfaceKHR& surface,
-        const SwapChain& swapChain);
+        const VulkanSwapChain& swapChain);
 
     void vulkanCreateLogicalDevice(const VkPhysicalDevice & vkPhysicalDevice, QueueFamilyIndices indices);
 
@@ -64,7 +64,7 @@ private:
     std::vector<const char*> vulkanGetRequiredExtensions(const VulkanWindow & vulkanWindow);
     bool isVkDeviceSuitable(const VkPhysicalDevice& device,
                             const VkSurfaceKHR & vkSurface,
-                            const SwapChain & swapChain,
+                            const VulkanSwapChain & swapChain,
                             VkPhysicalDeviceProperties deviceProperties,
                             VkPhysicalDeviceFeatures deviceFeatures,
                             QueueFamilyIndices queueFamilyIndices) const;

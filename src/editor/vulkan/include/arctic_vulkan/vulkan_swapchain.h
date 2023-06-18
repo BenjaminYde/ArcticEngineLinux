@@ -19,7 +19,7 @@ struct SwapChainData
 
 class GLFWwindow;
 
-class SwapChain
+class VulkanSwapChain
 {
 public:
 

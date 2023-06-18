@@ -1,13 +1,12 @@
-#include "renderloop.h"
-
+#include "arctic_vulkan/vulkan_renderloop.h"
 #include <iostream>
-#include "swapchain.h"
-#include "renderpipeline.h"
+#include "arctic_vulkan/vulkan_swapchain.h"
+#include "arctic_vulkan/vulkan_renderpipeline.h"
 
-RenderLoop::RenderLoop(
+VulkanRenderLoop::VulkanRenderLoop(
     VkDevice vkDevice, 
-    SwapChain* swapChain, 
-    RenderPipeline* renderPipeline, 
+    VulkanSwapChain* swapChain, 
+    VulkanRenderPipeline* renderPipeline, 
     VkQueue graphicsQueue, 
     VkQueue presentQueue)
     :
@@ -25,7 +24,7 @@ RenderLoop::RenderLoop(
     vulkanCreateSyncObjects();
 }
 
-void RenderLoop::CleanUp()
+void VulkanRenderLoop::CleanUp()
 {
     // wait until device is not executing work
     vkDeviceWaitIdle(vkDevice);
@@ -39,7 +38,7 @@ void RenderLoop::CleanUp()
     vkDestroyCommandPool(vkDevice, vkCommandPool, nullptr);
 }
 
-void RenderLoop::Render()
+void VulkanRenderLoop::Render()
 {
     // wait until previous frame is finished
     //// todo: implement multiple frames in flight. this avoids idle time (cpu waiting for gpu & vice versa)
@@ -121,7 +120,7 @@ void RenderLoop::Render()
     vkQueuePresentKHR(vkPresentQueue, &presentInfo);
 }
 
-void RenderLoop::vulkanCreateCommandPool(uint32_t graphicsFamilyIndex)
+void VulkanRenderLoop::vulkanCreateCommandPool(uint32_t graphicsFamilyIndex)
 {
     // create info: command pool
     VkCommandPoolCreateInfo poolInfo{};
@@ -138,7 +137,7 @@ void RenderLoop::vulkanCreateCommandPool(uint32_t graphicsFamilyIndex)
     }
 }
 
-void RenderLoop::vulkanCreateCommandBuffer()
+void VulkanRenderLoop::vulkanCreateCommandBuffer()
 {
     // create info: command buffer allocation
     VkCommandBufferAllocateInfo allocInfo{};
@@ -156,7 +155,7 @@ void RenderLoop::vulkanCreateCommandBuffer()
     }
 }
 
-void RenderLoop::vulkanRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void VulkanRenderLoop::vulkanRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
     // command buffer: begin
     VkCommandBufferBeginInfo beginInfo{};
@@ -223,7 +222,7 @@ void RenderLoop::vulkanRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32
     }
 }
 
-void RenderLoop::vulkanCreateSyncObjects()
+void VulkanRenderLoop::vulkanCreateSyncObjects()
 {
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;

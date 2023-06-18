@@ -1,11 +1,11 @@
-#include "renderpipeline.h"
+#include "arctic_vulkan/vulkan_renderpipeline.h"
 #include <iostream>
 
 #include <fmt/core.h>
 #include "utilities/file_utility.h"
 #include "utilities/application.h"
 
-RenderPipeline::RenderPipeline(
+VulkanRenderPipeline::VulkanRenderPipeline(
     const VkDevice & vkDevice, 
     uint32_t graphicsFamilyIndex)
     :
@@ -14,7 +14,7 @@ RenderPipeline::RenderPipeline(
 {
 }
 
-void RenderPipeline::Load(
+void VulkanRenderPipeline::Load(
     const SwapChainData & swapChainData, 
     const std::vector<VkImageView> & swapChainImageViews)
 {
@@ -26,7 +26,7 @@ void RenderPipeline::Load(
     createFramebuffers();
 }
 
-void RenderPipeline::CleanUp()
+void VulkanRenderPipeline::CleanUp()
 {
     // frame buffers
     for (auto framebuffer : swapChainFramebuffers)
@@ -40,22 +40,22 @@ void RenderPipeline::CleanUp()
     vkDestroyRenderPass(vkDevice, vkRenderPass, nullptr);
 }
 
-uint32_t RenderPipeline::GetGraphicsFamilyIndex()
+uint32_t VulkanRenderPipeline::GetGraphicsFamilyIndex()
 {
     return this->graphicsFamilyIndex;
 }
 
-const VkRenderPass &RenderPipeline::GetRenderPass()
+const VkRenderPass &VulkanRenderPipeline::GetRenderPass()
 {
     return this->vkRenderPass;
 }
 
-const VkPipeline &RenderPipeline::GetPipeline()
+const VkPipeline &VulkanRenderPipeline::GetPipeline()
 {
     return this->vkPipeline;
 }
 
-const VkFramebuffer & RenderPipeline::GetFrameBuffer(uint32_t index)
+const VkFramebuffer & VulkanRenderPipeline::GetFrameBuffer(uint32_t index)
 {
     return this->swapChainFramebuffers[index];
 }
@@ -65,7 +65,7 @@ const VkFramebuffer & RenderPipeline::GetFrameBuffer(uint32_t index)
 /// Specify the render pass and subpass index that the pipeline is compatible with, 
 /// This determines the framebuffer attachments, their formats, and the load/store operations
 /// </summary>
-void RenderPipeline::createRenderPass()
+void VulkanRenderPipeline::createRenderPass()
 {
     // create color attachment
     VkAttachmentDescription colorAttachment{};
@@ -147,7 +147,7 @@ void RenderPipeline::createRenderPass()
 /// - dynamicState (specify which pipeline states can be changed dynamically during command buffer recording without recreating the pipeline)
 /// - vkPipelineLayout (define descriptor set layouts that describe the resource bindings used by shaders (e.g., uniform buffers, textures, samplers))
 ///</summary>
-void RenderPipeline::createPipeline()
+void VulkanRenderPipeline::createPipeline()
 {
     // read file: vertex shader
     std::vector<char> fileVert;
@@ -355,7 +355,7 @@ void RenderPipeline::createPipeline()
     vkDestroyShaderModule(vkDevice, shaderModuleFrag, nullptr);
 }
 
-void RenderPipeline::createFramebuffers()
+void VulkanRenderPipeline::createFramebuffers()
 {
     // set size of frame buffers
     swapChainFramebuffers.resize(swapChainImageViews.size());
@@ -390,7 +390,7 @@ void RenderPipeline::createFramebuffers()
     }
 }
 
-bool RenderPipeline::createShaderModule(const std::vector<char>& code, VkShaderModule& shaderModule)
+bool VulkanRenderPipeline::createShaderModule(const std::vector<char>& code, VkShaderModule& shaderModule)
 {
     // create shader create info
     VkShaderModuleCreateInfo createInfo{};

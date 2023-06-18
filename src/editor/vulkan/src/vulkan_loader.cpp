@@ -1,16 +1,17 @@
-#include "vulkan_loader.h"
+#include "arctic_vulkan/vulkan_loader.h"
+
 #include "utilities/file_utility.h"
 #include "utilities/application.h"
 
 #include <iostream>
 #include <fmt/core.h>
 
-#include "vulkan_window.h"
-#include "renderpipeline.h"
-#include "renderloop.h"
-#include "swapchain.h"
+#include "arctic_vulkan/vulkan_window.h"
+#include "arctic_vulkan/vulkan_renderpipeline.h"
+#include "arctic_vulkan/vulkan_renderloop.h"
+#include "arctic_vulkan/vulkan_swapchain.h"
 
-const RenderLoop& VulkanLoader::GetRenderLoop()
+const VulkanRenderLoop& VulkanLoader::GetRenderLoop()
 {
     return *pRenderLoop;
 }
@@ -29,7 +30,7 @@ VulkanLoader::VulkanLoader(VulkanWindow & vulkanWindow)
 
     vulkanWindow.CreateSurface(vkInstance, vkSurface);
 
-    pSwapchain = new SwapChain();
+    pSwapchain = new VulkanSwapChain();
 
     vulkanLoadPhysicalDevice(vkInstance, vkSurface, *pSwapchain);
     
@@ -46,7 +47,7 @@ VulkanLoader::VulkanLoader(VulkanWindow & vulkanWindow)
     pSwapchain->CreateSwapChain();
 
     // create render pipeline
-    pRenderPipeline = new RenderPipeline(
+    pRenderPipeline = new VulkanRenderPipeline(
         vkDevice,
         queueFamilyIndices.graphicsFamily.value());
 
@@ -55,7 +56,7 @@ VulkanLoader::VulkanLoader(VulkanWindow & vulkanWindow)
         pSwapchain->GetImageViews());
     
     // create render loop
-    pRenderLoop = new RenderLoop(
+    pRenderLoop = new VulkanRenderLoop(
         vkDevice, 
         pSwapchain, 
         pRenderPipeline, 
@@ -176,7 +177,7 @@ std::vector<const char*> VulkanLoader::vulkanGetRequiredExtensions(const VulkanW
 void VulkanLoader::vulkanLoadPhysicalDevice(
     const VkInstance& instance,
     const VkSurfaceKHR& surface,
-    const SwapChain& swapChain)
+    const VulkanSwapChain& swapChain)
 {
     // get available physical devices
     uint32_t deviceCount = 0;
@@ -275,7 +276,7 @@ void VulkanLoader::vulkanCreateLogicalDevice(const VkPhysicalDevice & vkPhysical
 bool VulkanLoader::isVkDeviceSuitable(
         const VkPhysicalDevice & device,
         const VkSurfaceKHR & surface,
-        const SwapChain & swapChain,
+        const VulkanSwapChain & swapChain,
         VkPhysicalDeviceProperties deviceProperties,
         VkPhysicalDeviceFeatures deviceFeatures,
         QueueFamilyIndices queueFamilyIndices) const

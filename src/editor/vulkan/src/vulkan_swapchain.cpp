@@ -1,11 +1,11 @@
-#include "swapchain.h"
+#include "arctic_vulkan/vulkan_swapchain.h"
 
 #include <iostream>
 
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
-void SwapChain::Configure(
+void VulkanSwapChain::Configure(
     const VkDevice& vkDevice, 
     const VkPhysicalDevice& vkPhysicalDevice,
     const VkSurfaceKHR& vkSurface,
@@ -17,13 +17,13 @@ void SwapChain::Configure(
     this->window = window;
 }
 
-void SwapChain::CreateSwapChain()
+void VulkanSwapChain::CreateSwapChain()
 {
     createSwapChain(vkDevice, vkPhysicalDevice, vkSurface, window);
     createImageViews(vkDevice);
 }
 
-SwapChainDeviceSupport SwapChain::QuerySwapChainSupport(const VkPhysicalDevice & device, const VkSurfaceKHR & vkSurface) const
+SwapChainDeviceSupport VulkanSwapChain::QuerySwapChainSupport(const VkPhysicalDevice & device, const VkSurfaceKHR & vkSurface) const
 {
     SwapChainDeviceSupport details;
 
@@ -51,7 +51,7 @@ SwapChainDeviceSupport SwapChain::QuerySwapChainSupport(const VkPhysicalDevice &
     return details;
 }
 
-void SwapChain::CleanUp(const VkDevice &vkDevice)
+void VulkanSwapChain::CleanUp(const VkDevice &vkDevice)
 {
     // cleanup images
     for(auto & imageView : swapChainImageViews)
@@ -63,22 +63,22 @@ void SwapChain::CleanUp(const VkDevice &vkDevice)
     vkDestroySwapchainKHR(vkDevice, vkSwapChain, nullptr);
 }
 
-const SwapChainData SwapChain::GetData()
+const SwapChainData VulkanSwapChain::GetData()
 {
     return this->swapChainData;
 }
 
-const VkSwapchainKHR &SwapChain::GetSwapChain()
+const VkSwapchainKHR &VulkanSwapChain::GetSwapChain()
 {
     return this->vkSwapChain;
 }
 
-const std::vector<VkImageView> &SwapChain::GetImageViews()
+const std::vector<VkImageView> &VulkanSwapChain::GetImageViews()
 {
     return this->swapChainImageViews;
 }
 
-void SwapChain::createSwapChain(
+void VulkanSwapChain::createSwapChain(
     const VkDevice & vkDevice, 
     const VkPhysicalDevice & vkPhysicalDevice, 
     const VkSurfaceKHR & vkSurface,
@@ -138,7 +138,7 @@ void SwapChain::createSwapChain(
     swapChainData.imageCount = imageCount;
 }
 
-void SwapChain::createImageViews(const VkDevice &vkDevice)
+void VulkanSwapChain::createImageViews(const VkDevice &vkDevice)
 {
     // get image handles
     uint32_t imageCount = swapChainData.imageCount;
@@ -180,7 +180,7 @@ void SwapChain::createImageViews(const VkDevice &vkDevice)
     }
 }
 
-VkSurfaceFormatKHR SwapChain::selectSwapChainSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats)
+VkSurfaceFormatKHR VulkanSwapChain::selectSwapChainSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats)
 {
     // loop over available formats
     for (const auto& availableFormat : availableFormats)
@@ -195,7 +195,7 @@ VkSurfaceFormatKHR SwapChain::selectSwapChainSurfaceFormat(const std::vector<VkS
     return availableFormats[0];
 }
 
-VkPresentModeKHR SwapChain::selectSwapChainPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes)
+VkPresentModeKHR VulkanSwapChain::selectSwapChainPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes)
 {
     // loop over available modes
     for (const auto& availablePresentMode : availablePresentModes)
@@ -208,7 +208,7 @@ VkPresentModeKHR SwapChain::selectSwapChainPresentMode(const std::vector<VkPrese
 }
 
 
-VkExtent2D SwapChain::selectSwapChainExtent(GLFWwindow * window, const VkSurfaceCapabilitiesKHR & capabilities)
+VkExtent2D VulkanSwapChain::selectSwapChainExtent(GLFWwindow * window, const VkSurfaceCapabilitiesKHR & capabilities)
 {
     // get window size
     int windowFrameBufferWidth;

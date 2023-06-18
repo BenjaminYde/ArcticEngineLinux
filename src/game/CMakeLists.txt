@@ -11,5 +11,5 @@ add_executable(${TARGET} game.cpp)
 # add module: arctic engine
 target_link_libraries(${TARGET} PRIVATE ArcticEngine)
 
-get_target_property(ArcticEngine_INCLUDE_DIRS ArcticEngine INCLUDE_DIRS)
-target_include_directories(${TARGET} PRIVATE ${ArcticEngine_INCLUDE_DIRS})
+get_target_property(ArcticEngine_INCLUDE_DIR ArcticEngine INCLUDE_DIR)
+target_include_directories(${TARGET} PRIVATE ${ArcticEngine_INCLUDE_DIR})

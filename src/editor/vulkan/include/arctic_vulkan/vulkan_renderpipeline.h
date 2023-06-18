@@ -2,12 +2,12 @@
 
 #include <vector>
 #include <vulkan/vulkan_core.h>
-#include "swapchain.h"
+#include "arctic_vulkan/vulkan_swapchain.h"
 
-class RenderPipeline
+class VulkanRenderPipeline
 {
 public:
-  RenderPipeline(
+  VulkanRenderPipeline(
     const VkDevice & device,
     uint32_t graphicsFamilyIndex); 
 
