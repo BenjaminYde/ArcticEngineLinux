@@ -37,19 +37,22 @@ VulkanLoader::VulkanLoader(VulkanWindow & vulkanWindow)
     vulkanCreateLogicalDevice(vkPhysicalDevice, queueFamilyIndices);
     
     // create swapchain
-    pSwapchain->Load(
+    pSwapchain->Configure(
         vkDevice,
         vkPhysicalDevice,
         vkSurface,
         vulkanWindow.GetWindow());
 
+    pSwapchain->CreateSwapChain();
+
     // create render pipeline
     pRenderPipeline = new RenderPipeline(
         vkDevice,
-        queueFamilyIndices.graphicsFamily.value(),
+        queueFamilyIndices.graphicsFamily.value());
+
+    pRenderPipeline->Load(
         pSwapchain->GetData(), 
         pSwapchain->GetImageViews());
-    pRenderPipeline->Load();
     
     // create render loop
     pRenderLoop = new RenderLoop(

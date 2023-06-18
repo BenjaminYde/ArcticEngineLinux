@@ -5,11 +5,19 @@
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
-void SwapChain::Load(
-    const VkDevice &vkDevice, 
-    const VkPhysicalDevice & vkPhysicalDevice,
-    const VkSurfaceKHR & vkSurface,
+void SwapChain::Configure(
+    const VkDevice& vkDevice, 
+    const VkPhysicalDevice& vkPhysicalDevice,
+    const VkSurfaceKHR& vkSurface,
     GLFWwindow* window)
+{
+    this->vkDevice = vkDevice;
+    this->vkPhysicalDevice = vkPhysicalDevice;
+    this->vkSurface = vkSurface;
+    this->window = window;
+}
+
+void SwapChain::CreateSwapChain()
 {
     createSwapChain(vkDevice, vkPhysicalDevice, vkSurface, window);
     createImageViews(vkDevice);

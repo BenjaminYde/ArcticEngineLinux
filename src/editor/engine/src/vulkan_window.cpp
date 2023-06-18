@@ -27,10 +27,10 @@ void VulkanWindow::CreateWindow()
 
     // set hints
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
     // create window
-    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Vulkan", nullptr, nullptr);
+    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Arctic Engine", nullptr, nullptr);
 }
 
 void VulkanWindow::CreateSurface(const VkInstance & vkInstance, VkSurfaceKHR & vkSurface)

@@ -7,19 +7,20 @@
 
 RenderPipeline::RenderPipeline(
     const VkDevice & vkDevice, 
-    uint32_t graphicsFamilyIndex,
-    const SwapChainData & swapChainData, 
-    const std::vector<VkImageView> & swapChainImageViews)
+    uint32_t graphicsFamilyIndex)
     :
     vkDevice(vkDevice),
-    graphicsFamilyIndex(graphicsFamilyIndex),
-    swapChainData(swapChainData),
-    swapChainImageViews(swapChainImageViews)
+    graphicsFamilyIndex(graphicsFamilyIndex)
 {
 }
 
-void RenderPipeline::Load()
+void RenderPipeline::Load(
+    const SwapChainData & swapChainData, 
+    const std::vector<VkImageView> & swapChainImageViews)
 {
+    this->swapChainData=swapChainData;
+    this->swapChainImageViews=swapChainImageViews;
+
     createRenderPass();
     createPipeline();
     createFramebuffers();

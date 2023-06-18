@@ -25,19 +25,53 @@ RenderLoop::RenderLoop(
     vulkanCreateSyncObjects();
 }
 
+void RenderLoop::CleanUp()
+{
+    // wait until device is not executing work
+    vkDeviceWaitIdle(vkDevice);
+
+    // syncing
+    vkDestroySemaphore(vkDevice, imageAvailableSemaphore, nullptr);
+    vkDestroySemaphore(vkDevice, renderFinishedSemaphore, nullptr);
+    vkDestroyFence(vkDevice, isDoneRenderingFence, nullptr);
+
+    // command pool & buffer
+    vkDestroyCommandPool(vkDevice, vkCommandPool, nullptr);
+}
+
 void RenderLoop::Render()
 {
     // wait until previous frame is finished
-    //> no timeout
+    //// todo: implement multiple frames in flight. this avoids idle time (cpu waiting for gpu & vice versa)
+    //// https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Frames_in_flight
     vkWaitForFences(vkDevice, 1, &isDoneRenderingFence, VK_TRUE, UINT64_MAX);
-
-    // reset fence state to zero
-    vkResetFences(vkDevice, 1, &isDoneRenderingFence);
 
     // acquire next image from swap chain
     uint32_t availableImageIndex;
-    vkAcquireNextImageKHR(vkDevice, pSwapchain->GetSwapChain(), UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &availableImageIndex);
+    VkResult resultAcquireNextImage = vkAcquireNextImageKHR(vkDevice, pSwapchain->GetSwapChain(), UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &availableImageIndex);
 
+    // check if swapchain still up-to-date
+    // >> recreate when not (due to window resizing, ...)
+    if (resultAcquireNextImage == VK_ERROR_OUT_OF_DATE_KHR)
+    {   
+        // wait until idle
+        vkDeviceWaitIdle(vkDevice);
+
+        // re-create swapchain and re-load dependencies on swapchain data
+        pSwapchain->CleanUp(vkDevice);
+        pSwapchain->CreateSwapChain();
+
+        pRenderPipeline->Load(
+            pSwapchain->GetData(), 
+            pSwapchain->GetImageViews());
+        
+        return;
+    }
+
+    // reset fence state to zero
+    // only reset the fence if we are submitting work
+    vkResetFences(vkDevice, 1, &isDoneRenderingFence);
+    
     // record command buffer
     vkResetCommandBuffer(vkCommandBuffer, 0);
     vulkanRecordCommandBuffer(vkCommandBuffer, availableImageIndex);
@@ -85,20 +119,6 @@ void RenderLoop::Render()
 
     // queue present khr
     vkQueuePresentKHR(vkPresentQueue, &presentInfo);
-}
-
-void RenderLoop::CleanUp()
-{
-    // wait until device is not executing work
-    vkDeviceWaitIdle(vkDevice);
-
-    // syncing
-    vkDestroySemaphore(vkDevice, imageAvailableSemaphore, nullptr);
-    vkDestroySemaphore(vkDevice, renderFinishedSemaphore, nullptr);
-    vkDestroyFence(vkDevice, isDoneRenderingFence, nullptr);
-
-    // command pool & buffer
-    vkDestroyCommandPool(vkDevice, vkCommandPool, nullptr);
 }
 
 void RenderLoop::vulkanCreateCommandPool(uint32_t graphicsFamilyIndex)

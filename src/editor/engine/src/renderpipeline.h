@@ -9,11 +9,12 @@ class RenderPipeline
 public:
   RenderPipeline(
     const VkDevice & device,
-    uint32_t graphicsFamilyIndex,
-    const SwapChainData & swapChainData, 
-    const std::vector<VkImageView> & swapChainImageViews); 
+    uint32_t graphicsFamilyIndex); 
 
-  void Load();
+  void Load(
+    const SwapChainData & swapChainData, 
+    const std::vector<VkImageView> & swapChainImageViews);
+
   void CleanUp();
 
   uint32_t GetGraphicsFamilyIndex();
@@ -24,8 +25,8 @@ public:
 private:
     VkDevice vkDevice = VK_NULL_HANDLE;
     uint32_t graphicsFamilyIndex;
-    const SwapChainData swapChainData;
-    const std::vector<VkImageView> swapChainImageViews;
+    SwapChainData swapChainData;
+    std::vector<VkImageView> swapChainImageViews;
 
     VkRenderPass vkRenderPass;
     VkPipelineLayout vkPipelineLayout;

@@ -15,7 +15,6 @@ public:
 
     void CreateWindow();
     void CreateSurface(const VkInstance & vkInstance, VkSurfaceKHR & vkSurface);
-    
     void CleanupWindow();
 
 private:

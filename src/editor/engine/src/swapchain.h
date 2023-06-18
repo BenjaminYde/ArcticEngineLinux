@@ -23,11 +23,13 @@ class SwapChain
 {
 public:
 
-    void Load(
-        const VkDevice &vkDevice, 
-        const VkPhysicalDevice &vkPhysicalDevice, 
-        const VkSurfaceKHR & vkSurface,
+    void Configure(
+        const VkDevice& vkDevice, 
+        const VkPhysicalDevice& vkPhysicalDevice,
+        const VkSurfaceKHR& vkSurface,
         GLFWwindow* window);
+
+    void CreateSwapChain();
 
     SwapChainDeviceSupport QuerySwapChainSupport(const VkPhysicalDevice & device, const VkSurfaceKHR & vkSurface) const;
 
@@ -38,6 +40,12 @@ public:
     const std::vector<VkImageView> &GetImageViews();
 
 private:
+
+    VkDevice vkDevice;
+    VkPhysicalDevice vkPhysicalDevice;
+    VkSurfaceKHR vkSurface;
+    GLFWwindow* window;
+
     void createSwapChain(
         const VkDevice & vkDevice, 
         const VkPhysicalDevice & vkPhysicalDevice, 
