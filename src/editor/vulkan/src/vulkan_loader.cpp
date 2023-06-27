@@ -6,6 +6,9 @@
 #include <iostream>
 #include <fmt/core.h>
 
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_vulkan.h>
+
 #include "arctic_vulkan/vulkan_window.h"
 #include "arctic_vulkan/vulkan_renderpipeline.h"
 #include "arctic_vulkan/vulkan_renderloop.h"
@@ -144,13 +147,13 @@ std::vector<const char*> VulkanLoader::vulkanGetRequiredExtensions(const VulkanW
     std::vector<const char*> extensions;
 
     // get glfw extensions
-    auto glfwExtensionsData = vulkanWindow.GetGLFWExtensions();
-    uint32_t glfwExtensionCount = glfwExtensionsData.first;
-    const char** glfwExtensions = glfwExtensionsData.second;
+    auto windowExtensions = vulkanWindow.GetExtensions();
+    size_t windowExtensionCount = windowExtensions.size();
+    //const char** glfwExtensions = windowExtensions.second;
 
-    for(int i=0; i<glfwExtensionCount; ++i)
+    for(int i=0; i<windowExtensionCount; ++i)
     {
-        const char* extension = glfwExtensions[i];
+        const char* extension = windowExtensions[i];
         extensions.push_back(extension);
     }
 

@@ -2,14 +2,16 @@
 
 #include <iostream>
 
-#include <GLFW/glfw3.h>
-#include <GLFW/glfw3native.h>
+//#include <GLFW/glfw3.h>
+//#include <GLFW/glfw3native.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_vulkan.h>
 
 void VulkanSwapChain::Configure(
     const VkDevice& vkDevice, 
     const VkPhysicalDevice& vkPhysicalDevice,
     const VkSurfaceKHR& vkSurface,
-    GLFWwindow* window)
+    SDL_Window* window)
 {
     this->vkDevice = vkDevice;
     this->vkPhysicalDevice = vkPhysicalDevice;
@@ -82,7 +84,7 @@ void VulkanSwapChain::createSwapChain(
     const VkDevice & vkDevice, 
     const VkPhysicalDevice & vkPhysicalDevice, 
     const VkSurfaceKHR & vkSurface,
-    GLFWwindow* window)
+    SDL_Window* window)
 {
     // query device support
     SwapChainDeviceSupport swapChainSupport = QuerySwapChainSupport(vkPhysicalDevice, vkSurface);
@@ -208,12 +210,12 @@ VkPresentModeKHR VulkanSwapChain::selectSwapChainPresentMode(const std::vector<V
 }
 
 
-VkExtent2D VulkanSwapChain::selectSwapChainExtent(GLFWwindow * window, const VkSurfaceCapabilitiesKHR & capabilities)
+VkExtent2D VulkanSwapChain::selectSwapChainExtent(SDL_Window* window, const VkSurfaceCapabilitiesKHR & capabilities)
 {
     // get window size
     int windowFrameBufferWidth;
     int windowFrameBufferHeight;
-    glfwGetFramebufferSize(window, &windowFrameBufferWidth, &windowFrameBufferHeight);
+    SDL_Vulkan_GetDrawableSize(window, &windowFrameBufferWidth, &windowFrameBufferHeight);
 
     // create vulkan extent
     VkExtent2D extent = {};

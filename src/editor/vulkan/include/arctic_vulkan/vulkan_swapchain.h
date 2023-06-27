@@ -17,7 +17,7 @@ struct SwapChainData
     VkExtent2D extent;
 };
 
-class GLFWwindow;
+class SDL_Window;
 
 class VulkanSwapChain
 {
@@ -27,7 +27,7 @@ public:
         const VkDevice& vkDevice, 
         const VkPhysicalDevice& vkPhysicalDevice,
         const VkSurfaceKHR& vkSurface,
-        GLFWwindow* window);
+        SDL_Window* window);
 
     void CreateSwapChain();
 
@@ -44,19 +44,19 @@ private:
     VkDevice vkDevice;
     VkPhysicalDevice vkPhysicalDevice;
     VkSurfaceKHR vkSurface;
-    GLFWwindow* window;
+    SDL_Window* window;
 
     void createSwapChain(
         const VkDevice & vkDevice, 
         const VkPhysicalDevice & vkPhysicalDevice, 
         const VkSurfaceKHR & vkSurface,
-        GLFWwindow* window);
+        SDL_Window* window);
 
     void createImageViews(const VkDevice &vkDevice);
 
     VkSurfaceFormatKHR selectSwapChainSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
     VkPresentModeKHR selectSwapChainPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
-    VkExtent2D selectSwapChainExtent(GLFWwindow* window, const VkSurfaceCapabilitiesKHR &capabilities);
+    VkExtent2D selectSwapChainExtent(SDL_Window* window, const VkSurfaceCapabilitiesKHR &capabilities);
 
     SwapChainData swapChainData;
 

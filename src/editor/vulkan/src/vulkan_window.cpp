@@ -2,75 +2,63 @@
 
 #include <iostream>
 
-#include <GLFW/glfw3.h>
-#include <GLFW/glfw3native.h>
-
 #include <xcb/xcb.h>
 #include <X11/Xlib-xcb.h>
 
-GLFWwindow * VulkanWindow::GetWindow()
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_vulkan.h>
+
+SDL_Window* VulkanWindow::GetWindow()
 {
     return this->window;
 }
 
-std::pair<uint32_t, const char**> VulkanWindow::GetGLFWExtensions() const
+std::vector<const char*> VulkanWindow::GetExtensions() const
 {
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-    return std::make_pair(glfwExtensionCount, glfwExtensions);
+    uint32_t extensionCount = 0;
+    SDL_Vulkan_GetInstanceExtensions(this->window, &extensionCount, nullptr);
+    std::vector<const char*> extensions(extensionCount);
+    SDL_Vulkan_GetInstanceExtensions(window, &extensionCount, extensions.data());
+    return extensions;
 }
 
 void VulkanWindow::CreateWindow()
 {
-    // init glfw
-    glfwInit();
+    // create SDL window
+    window = SDL_CreateWindow(
+        "Arctic Engine",
+        SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED,
+        WINDOW_WIDTH, 
+        WINDOW_HEIGHT,
+        SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 
-    // set hints
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-
-    // create window
-    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Arctic Engine", nullptr, nullptr);
+    // checks if window has been created; if not, exits program
+    if (window == NULL) 
+    {
+        std::cout << "SDL failed to initialize: " << SDL_GetError() << std::endl;
+    }
+  
+    // pauses all SDL subsystems for a variable amount of milliseconds
+    SDL_Delay(100);
 }
 
-void VulkanWindow::CreateSurface(const VkInstance & vkInstance, VkSurfaceKHR & vkSurface)
+void VulkanWindow::CreateSurface(const VkInstance& vkInstance, VkSurfaceKHR& vkSurface)
 {
-        // create native surface
-    Display* x11Display = glfwGetX11Display();
-    if (!x11Display) {
-        std::cout << "error: vulkan: failed to create window 32 surface!";
-        return;
-    }
-    xcb_connection_t* xcbConnection = XGetXCBConnection(x11Display);
-    xcb_window_t xcbWindow = glfwGetX11Window(window);
 
-    VkXcbSurfaceCreateInfoKHR createInfo = {};
-    createInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
-    createInfo.pNext = NULL;
-    createInfo.flags = 0;
-    createInfo.connection = xcbConnection;
-    createInfo.window = xcbWindow;
-
-    VkResult resultWindows = vkCreateXcbSurfaceKHR(vkInstance, &createInfo, nullptr, &vkSurface);
-
-    if(resultWindows != VK_SUCCESS)
+    SDL_bool result = SDL_Vulkan_CreateSurface(window, vkInstance, &vkSurface);
+    if(result != SDL_TRUE)
     {
         std::cout << "error: vulkan: failed to create surface!";
-        return;
-    }
-
-    // create glfw surface from native surface
-    VkResult resultGlfw = glfwCreateWindowSurface(vkInstance, window, nullptr, &vkSurface);
-    if(resultGlfw != VK_SUCCESS)
-    {
-        std::cout << "error: vulkan: failed to create glfw window surface!";
         return;
     }
 }
 
 void VulkanWindow::CleanupWindow()
 {
-    // glfw
-    glfwDestroyWindow(window);
-    glfwTerminate();
+    // frees memory
+    SDL_DestroyWindow(window);
+  
+    // Shuts down all SDL subsystems
+    SDL_Quit(); 
 }

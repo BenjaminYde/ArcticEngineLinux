@@ -1,5 +1,5 @@
 #include "engine/arctic_engine.h"
-#include <GLFW/glfw3.h>
+#include <SDL2/SDL.h>
 #include "arctic_vulkan/vulkan_loader.h"
 #include "arctic_vulkan/vulkan_renderloop.h"
 #include "arctic_vulkan/vulkan_window.h"
@@ -8,11 +8,17 @@ void ArcticEngine::Run()
 {
     // loop while no close window
     auto window = pVulkanWindow->GetWindow();
-    while (!glfwWindowShouldClose(window))
+    SDL_Event event;
+    bool running = true;
+    while(running)
     {
         // check input
-        glfwPollEvents();
-    
+        while(SDL_PollEvent(&event))
+        {
+            if(event.type == SDL_QUIT)
+                running = false;
+        }
+        
         // render
         VulkanRenderLoop renderLoop = vulkanLoader->GetRenderLoop();
         renderLoop.Render();

@@ -30,7 +30,7 @@ target_include_directories(${TARGET}
         ${INCLUDE_DIR}
         )
 
-FindPackage_GLFW(  ${TARGET})
+FindPackage_SDL(  ${TARGET})
 FindPackage_Vulkan(${TARGET})
 
 # add module: arctic vulkan

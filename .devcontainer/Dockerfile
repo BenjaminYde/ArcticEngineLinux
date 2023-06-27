@@ -142,7 +142,16 @@ RUN apt-get update && apt-get install -y --install-recommends \
     mesa-vulkan-drivers \
     vulkan-tools
 
-# Install glfw dependencies
+# Install SDL2
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # SDL2
+    libsdl2-dev \
+    libsdl2-image-dev \
+    libsdl2-mixer-dev \
+    libsdl2-net-dev \
+    libsdl2-ttf-dev
+
+# Install SDL2 dependencies
 RUN apt-get update && apt-get install -y --install-recommends \
     # open gl    
     libgl1-mesa-dev \

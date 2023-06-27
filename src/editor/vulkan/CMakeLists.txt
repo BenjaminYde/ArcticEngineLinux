@@ -33,7 +33,7 @@ target_include_directories(${TARGET}
 
 # link packages
 FindPackage_Vulkan(${TARGET})
-FindPackage_GLFW(  ${TARGET})
+FindPackage_SDL(  ${TARGET})
 FindPackage_GLM(   ${TARGET})
 FindPackage_FMT(   ${TARGET})
 
