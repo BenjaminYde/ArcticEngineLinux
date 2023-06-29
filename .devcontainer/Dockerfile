@@ -121,17 +121,6 @@ RUN ICD_NVIDIA="/vulkan-icd/nvidia_icd.json" && \
     && echo '    }' >> $ICD_NVIDIA \
     && echo '}' >> /$ICD_NVIDIA
 
-# Install ZSH
-RUN sudo apt install -y zsh && \
-    sudo chsh -s /usr/bin/zsh && \
-    # Install oh my zsh
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" && \
-    # configure .zshrc
-    cd ~ && \
-    touch .zshrc && \
-    sed -i 's/ZSH_THEME=.*/ZSH_THEME="eastwood"/' .zshrc && \
-    echo "ZSH Installed"
-
 # Install vulkan dependencies
 RUN apt-get update && apt-get install -y --install-recommends \
     #other
@@ -142,19 +131,12 @@ RUN apt-get update && apt-get install -y --install-recommends \
     mesa-vulkan-drivers \
     vulkan-tools
 
-# Install SDL2
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    # SDL2
-    libsdl2-dev \
-    libsdl2-image-dev \
-    libsdl2-mixer-dev \
-    libsdl2-net-dev \
-    libsdl2-ttf-dev
-
-# Install SDL2 dependencies
+# Install XServer dependencies
 RUN apt-get update && apt-get install -y --install-recommends \
-    # open gl    
+    # open gl
+    libegl1-mesa-dev \    
     libgl1-mesa-dev \
+    libgles2-mesa-dev \
     # x general
     libxrandr-dev \
     libxinerama-dev \
@@ -164,7 +146,83 @@ RUN apt-get update && apt-get install -y --install-recommends \
     libx11-xcb-dev \
     libxi-dev \
     libxcb1-dev \
-    libxcb-randr0-dev 
+    libxcb-randr0-dev \
+    libxfixes-dev \
+    libxss-dev \
+    libxkbcommon-dev
+
+# Install SDL2 (no source)
+#RUN apt-get update && apt-get install -y --no-install-recommends \
+#    # SDL2
+#    libsdl2-dev \
+#    libsdl2-image-dev \
+#    libsdl2-mixer-dev \
+#    libsdl2-net-dev \
+#    libsdl2-ttf-dev
+
+# Install SDL2 dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libfreeimage-dev \
+    libopenal-dev \
+    libpango1.0-dev \
+    libsndfile-dev \
+    libudev-dev \
+    libasound2-dev \
+    libjpeg-dev \
+    libtiff5-dev \
+    libwebp-dev \
+    libaudio-dev \
+    libpulse-dev \ 
+    libjack-dev \
+    libxext-dev \
+    libdbus-1-dev \
+    libibus-1.0-dev \
+    fcitx-libs-dev \ 
+    libdrm-dev \
+    libgbm-dev \
+    libpipewire-0.3-dev \
+    libwayland-dev \
+    libdecor-0-dev
+
+# Download and install SDL2 from source
+ENV SDL_VERSION 2.28.0
+#RUN cd /tmp && \
+#    curl -L -O https://github.com/libsdl-org/SDL/archive/refs/tags/release-${SDL2_VERSION}.tar.gz && \
+#    tar xzf SDL2-${SDL2_VERSION}.tar.gz && \
+#    rm SDL2-${SDL2_VERSION}.tar.gz && \
+#    cd SDL2-${SDL2_VERSION} && \
+#    ./configure && \
+#    make && \
+#    make install
+
+# Download SDL source code
+RUN cd /tmp && \
+    wget --no-check-certificate https://github.com/libsdl-org/SDL/releases/download/release-${SDL_VERSION}/SDL2-${SDL_VERSION}.tar.gz && \
+    tar -xzvf SDL2-${SDL_VERSION}.tar.gz && \
+    rm SDL2-${SDL_VERSION}.tar.gz 
+
+# Build and install SDL2 from source
+RUN cd /tmp/SDL2-${SDL_VERSION} && \
+    mkdir /opt/SDL2-${SDL_VERSION} && \
+    #./configure && \
+    cmake -S . -B /opt/SDL2-${SDL_VERSION} && \
+    cmake --build /opt/SDL2-${SDL_VERSION} && \
+    #cd /opt/SDL2-${SDL_VERSION} && \
+    #make && \
+    cmake --install /opt/SDL2-${SDL_VERSION}
+#ENV CMAKE_PREFIX_PATH="/opt/SDL2-${SDL_VERSION}:${CMAKE_PREFIX_PATH}"
+
+# Install ZSH
+RUN sudo apt install -y zsh && \
+    sudo chsh -s /usr/bin/zsh && \
+    # Install oh my zsh
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" && \
+    # configure .zshrc
+    cd ~ && \
+    touch .zshrc && \
+    sed -i 's/ZSH_THEME=.*/ZSH_THEME="eastwood"/' .zshrc && \
+    echo "ZSH Installed"
 
 ENTRYPOINT ["/usr/bin/zsh"]
 

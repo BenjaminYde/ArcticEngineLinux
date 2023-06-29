@@ -2,8 +2,6 @@
 
 #include <iostream>
 
-//#include <GLFW/glfw3.h>
-//#include <GLFW/glfw3native.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_vulkan.h>
 
