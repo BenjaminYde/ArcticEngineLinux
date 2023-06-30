@@ -1,15 +1,12 @@
 #include "arctic_vulkan/vulkan_swapchain.h"
-
+#include "arctic_vulkan/vulkan_window.h"
 #include <iostream>
-
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_vulkan.h>
 
 void VulkanSwapChain::Configure(
     const VkDevice& vkDevice, 
     const VkPhysicalDevice& vkPhysicalDevice,
     const VkSurfaceKHR& vkSurface,
-    SDL_Window* window)
+    VulkanWindow* window)
 {
     this->vkDevice = vkDevice;
     this->vkPhysicalDevice = vkPhysicalDevice;
@@ -82,7 +79,7 @@ void VulkanSwapChain::createSwapChain(
     const VkDevice & vkDevice, 
     const VkPhysicalDevice & vkPhysicalDevice, 
     const VkSurfaceKHR & vkSurface,
-    SDL_Window* window)
+    VulkanWindow* window)
 {
     // query device support
     SwapChainDeviceSupport swapChainSupport = QuerySwapChainSupport(vkPhysicalDevice, vkSurface);
@@ -208,17 +205,15 @@ VkPresentModeKHR VulkanSwapChain::selectSwapChainPresentMode(const std::vector<V
 }
 
 
-VkExtent2D VulkanSwapChain::selectSwapChainExtent(SDL_Window* window, const VkSurfaceCapabilitiesKHR & capabilities)
+VkExtent2D VulkanSwapChain::selectSwapChainExtent(VulkanWindow* window, const VkSurfaceCapabilitiesKHR & capabilities)
 {
     // get window size
-    int windowFrameBufferWidth;
-    int windowFrameBufferHeight;
-    SDL_Vulkan_GetDrawableSize(window, &windowFrameBufferWidth, &windowFrameBufferHeight);
+    auto framebufferSize = window->GetFramebufferSize();
 
     // create vulkan extent
     VkExtent2D extent = {};
-    extent.width = std::clamp(static_cast<uint32_t>(windowFrameBufferWidth), capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-    extent.height = std::clamp(static_cast<uint32_t>(windowFrameBufferHeight), capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+    extent.width = std::clamp(static_cast<uint32_t>(framebufferSize.first), capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+    extent.height = std::clamp(static_cast<uint32_t>(framebufferSize.second), capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
 
     return extent;
 }

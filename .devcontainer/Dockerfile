@@ -34,6 +34,9 @@ RUN apt -qq update && \
 # Install CMAKE
 ENV CMAKE_VERSION 3.26.3
 RUN apt update && \
+    apt -qq install -y --no-install-recommends && \
+        graphviz \
+    && \
     cd /tmp && \
     wget --no-check-certificate https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz && \
     tar -xzvf cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz && \

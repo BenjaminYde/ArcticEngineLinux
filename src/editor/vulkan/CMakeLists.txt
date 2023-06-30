@@ -19,6 +19,7 @@ set_target_properties(${TARGET} PROPERTIES
 # set sources
 target_sources(${TARGET}
         PRIVATE
+        ${SRC_DIR}/vulkan_context.cpp
         ${SRC_DIR}/vulkan_renderloop.cpp
         ${SRC_DIR}/vulkan_renderpipeline.cpp
         ${SRC_DIR}/vulkan_swapchain.cpp

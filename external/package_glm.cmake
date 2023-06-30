@@ -6,5 +6,5 @@ function(FindPackage_GLM TARGET_NAME)
 
     FetchContent_MakeAvailable(external_glm)
 
-    target_link_libraries(${TARGET} PRIVATE glm::glm)
+    target_link_libraries(${TARGET_NAME} PRIVATE glm::glm)
 endfunction()

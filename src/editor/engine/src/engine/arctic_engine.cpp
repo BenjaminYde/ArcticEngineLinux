@@ -1,13 +1,12 @@
 #include "engine/arctic_engine.h"
 #include <SDL2/SDL.h>
-#include "arctic_vulkan/vulkan_loader.h"
-#include "arctic_vulkan/vulkan_renderloop.h"
 #include "arctic_vulkan/vulkan_window.h"
+#include "arctic_vulkan/vulkan_context.h"
 
 void ArcticEngine::Run()
 {
     // loop while no close window
-    auto window = pVulkanWindow->GetWindow();
+    auto window = pVulkanWindow->GetSDLWindow();
     SDL_Event event;
     bool running = true;
     while(running)
@@ -20,8 +19,7 @@ void ArcticEngine::Run()
         }
         
         // render
-        VulkanRenderLoop renderLoop = vulkanLoader->GetRenderLoop();
-        renderLoop.Render();
+        pVulkanContext->Render();
     }
 }
 
@@ -32,14 +30,20 @@ void ArcticEngine::Initialize()
     pVulkanWindow->CreateWindow();
 
     // load vulkan
-    vulkanLoader = new VulkanLoader(*pVulkanWindow);
+    pVulkanContext = new VulkanContext(pVulkanWindow);
+
+    // // define 3d data
+    // const std::vector<Vertex> vertices = {
+    //     {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    //     {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+    //     {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+    // };
 }
 
 void ArcticEngine::Cleanup()
 {
     // cleanup vulkan
-    vulkanLoader->Cleanup();
-    delete vulkanLoader;
+    pVulkanContext->Cleanup();
 
     // cleanup window
     pVulkanWindow->CleanupWindow();

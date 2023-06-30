@@ -1,20 +1,27 @@
 #pragma once
 
-#include <vulkan/vulkan_core.h>
 #include <utility>
-#include<vector>
+#include <vector>
+#include <cstdint>
 
 class SDL_Window;
+
+// avoid include vulkan headers
+#ifndef VULKAN_H_
+    typedef struct VkInstance_T* VkInstance;
+    typedef struct VkSurfaceKHR_T* VkSurfaceKHR;
+#endif
 
 class VulkanWindow
 {
 public:
     
-    SDL_Window* GetWindow();
+    SDL_Window* GetSDLWindow();
     std::vector<const char*> GetExtensions() const;
+    std::pair<uint32_t,uint32_t> GetFramebufferSize() const;
 
     void CreateWindow();
-    void CreateSurface(const VkInstance & vkInstance, VkSurfaceKHR & vkSurface);
+    void CreateSurface(const VkInstance& vkInstance, VkSurfaceKHR& vkSurface);
     void CleanupWindow();
 
 private:

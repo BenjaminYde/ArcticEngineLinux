@@ -31,7 +31,8 @@ target_include_directories(${TARGET}
         )
 
 FindPackage_SDL(  ${TARGET})
-FindPackage_Vulkan(${TARGET})
+#FindPackage_Vulkan(${TARGET})
+#FindPackage_GLM(${TARGET})
 
 # add module: arctic vulkan
 target_link_libraries(
@@ -48,3 +49,19 @@ target_include_directories(
         ${TARGET} 
         PRIVATE 
         ${ArcticVulkan_INCLUDE_DIR})
+
+# add module: arctic rendering
+target_link_libraries(
+        ${TARGET} 
+        PRIVATE 
+        ArcticRendering)
+
+get_target_property(
+        ArcticRendering_INCLUDE_DIR
+        ArcticRendering
+        INCLUDE_DIR)
+
+target_include_directories(
+        ${TARGET} 
+        PRIVATE 
+        ${ArcticRendering_INCLUDE_DIR})

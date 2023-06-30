@@ -6,5 +6,5 @@ function(FindPackage_FMT TARGET_NAME)
 
     FetchContent_MakeAvailable(external_fmt)
 
-    target_link_libraries(${TARGET} PRIVATE fmt::fmt-header-only)
+    target_link_libraries(${TARGET_NAME} PRIVATE fmt::fmt-header-only)
 endfunction()

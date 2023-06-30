@@ -1,7 +1,7 @@
 #pragma once
 
-class VulkanLoader;
 class VulkanWindow;
+class VulkanContext;
 
 class ArcticEngine
 {
@@ -12,5 +12,5 @@ public:
 
 private:
     VulkanWindow* pVulkanWindow;
-    VulkanLoader* vulkanLoader;
+    VulkanContext* pVulkanContext;
 };

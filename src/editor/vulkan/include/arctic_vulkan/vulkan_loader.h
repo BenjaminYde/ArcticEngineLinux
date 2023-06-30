@@ -13,7 +13,7 @@ class VulkanRenderLoop;
 class VulkanLoader
 {
 public:
-    VulkanLoader(VulkanWindow & vulkanWindow);
+    VulkanLoader(VulkanWindow* vulkanWindow);
     void Cleanup();
 
     const VulkanRenderLoop& GetRenderLoop();

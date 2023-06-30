@@ -6,9 +6,6 @@
 #include <iostream>
 #include <fmt/core.h>
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_vulkan.h>
-
 #include "arctic_vulkan/vulkan_window.h"
 #include "arctic_vulkan/vulkan_renderpipeline.h"
 #include "arctic_vulkan/vulkan_renderloop.h"
@@ -19,7 +16,7 @@ const VulkanRenderLoop& VulkanLoader::GetRenderLoop()
     return *pRenderLoop;
 }
 
-VulkanLoader::VulkanLoader(VulkanWindow & vulkanWindow)
+VulkanLoader::VulkanLoader(VulkanWindow* vulkanWindow)
 {
     // check validation layers
     if(enableValidationLayers && !vulkanFoundValidationLayers())
@@ -28,10 +25,10 @@ VulkanLoader::VulkanLoader(VulkanWindow & vulkanWindow)
         return;
     }
 
-    vulkanCreateInstance(vulkanWindow);
+    vulkanCreateInstance(*vulkanWindow);
     vulkanLoadDebugMessenger();
 
-    vulkanWindow.CreateSurface(vkInstance, vkSurface);
+    vulkanWindow->CreateSurface(vkInstance, vkSurface);
 
     pSwapchain = new VulkanSwapChain();
 
@@ -45,7 +42,7 @@ VulkanLoader::VulkanLoader(VulkanWindow & vulkanWindow)
         vkDevice,
         vkPhysicalDevice,
         vkSurface,
-        vulkanWindow.GetWindow());
+        vulkanWindow);
 
     pSwapchain->CreateSwapChain();
 
@@ -97,7 +94,7 @@ void VulkanLoader::Cleanup()
     vkDestroyInstance(vkInstance, nullptr);
 }
 
-void VulkanLoader::vulkanCreateInstance(VulkanWindow & vulkanWindow)
+void VulkanLoader::vulkanCreateInstance(VulkanWindow& vulkanWindow)
 {
     // create app info
     VkApplicationInfo appInfo{};

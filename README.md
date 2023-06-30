@@ -1,14 +1,21 @@
 # ArcticEngine2
 
-#Linux
+# CMake Graph Visualizer
 
-On the host machine run the following command:
+Use `graphviz` to visualize the dependency graph:
+
+1. Navigate to your build directory
+1. Run CMake with the --graphviz option
+    - This will generate a graph.dot file in your build directory 
+1. Use dot (included in graphviz) to generate an image from the .dot file:
+    - This will generate a graph.png image file in your build directory.
 
 ```sh
-xhost +local:
+cd /path/to/your/build
+cmake --graphviz=graph.dot ..
+dot -Tpng graph.dot -o graph.png
 ```
-
-# vulkan test
+# Vulkan Test
 
 To verify that vulkan works correctly,
 run the following command:
