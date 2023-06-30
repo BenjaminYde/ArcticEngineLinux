@@ -11,6 +11,14 @@
             "program": "${workspaceFolder}/build/linux-clang-debug/src/game/ArcticGame",
             "args": [],
             "cwd": "${workspaceFolder}",
+        },
+        {
+            "name": "Clang Release",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/linux-clang-release/src/game/ArcticGame",
+            "args": [],
+            "cwd": "${workspaceFolder}",
         }
     ]
 }

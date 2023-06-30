@@ -206,7 +206,7 @@ RUN cd /tmp && \
 RUN cd /tmp/SDL2-${SDL_VERSION} && \
     mkdir /opt/SDL2-${SDL_VERSION} && \
     #./configure && \
-    cmake -S . -B /opt/SDL2-${SDL_VERSION} && \
+    cmake -S . -B /opt/SDL2-${SDL_VERSION} -DCMAKE_BUILD_TYPE=Release && \
     cmake --build /opt/SDL2-${SDL_VERSION} && \
     #cd /opt/SDL2-${SDL_VERSION} && \
     #make && \
