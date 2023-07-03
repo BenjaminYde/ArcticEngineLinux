@@ -12,7 +12,7 @@ Use `graphviz` to visualize the dependency graph:
 
 ```sh
 cd /path/to/your/build
-cmake --graphviz=graph.dot ..
+cmake --graphviz=graph.dot .
 dot -Tpng graph.dot -o graph.png
 ```
 # Vulkan Test

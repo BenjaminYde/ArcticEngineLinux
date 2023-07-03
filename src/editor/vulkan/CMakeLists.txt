@@ -19,12 +19,13 @@ set_target_properties(${TARGET} PROPERTIES
 # set sources
 target_sources(${TARGET}
         PRIVATE
-        ${SRC_DIR}/vulkan_context.cpp
+        ${SRC_DIR}/vulkan_context.cpp 
         ${SRC_DIR}/vulkan_renderloop.cpp
         ${SRC_DIR}/vulkan_renderpipeline.cpp
         ${SRC_DIR}/vulkan_swapchain.cpp
         ${SRC_DIR}/vulkan_loader.cpp
         ${SRC_DIR}/vulkan_window.cpp
+        ${SRC_DIR}/rendering_utilities.cpp
         )
 
 # set includes
@@ -58,3 +59,19 @@ target_include_directories(
         ${TARGET} 
         PRIVATE 
         ${Utilties_INCLUDE_DIR})
+
+# add module: arctic rendering
+target_link_libraries(
+        ${TARGET} 
+        PRIVATE 
+        ArcticRendering)
+
+get_target_property(
+        ArcticRendering_INCLUDE_DIR
+        ArcticRendering
+        INCLUDE_DIR)
+
+target_include_directories(
+        ${TARGET} 
+        PRIVATE 
+        ${ArcticRendering_INCLUDE_DIR})

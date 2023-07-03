@@ -5,6 +5,9 @@
 #include "utilities/file_utility.h"
 #include "utilities/application.h"
 
+#include "arctic_rendering/vertex.h"
+#include "arctic_vulkan/rendering_utilities.h"
+
 VulkanRenderPipeline::VulkanRenderPipeline(
     const VkDevice & vkDevice, 
     uint32_t graphicsFamilyIndex)
@@ -198,14 +201,21 @@ void VulkanRenderPipeline::createPipeline()
     //> describes the format of the vertex data that will be passed to the vertex shader
     //> bindings: spacing between data and whether the data is per-vertex or per-instance
     //> attribute descriptions: type of the attributes passed to the vertex shader, which binding to load them from and at which offset
-    // todo: because we're hard coding the vertex data directly in the vertex shader,
-    //       we'll fill in this structure to specify that there is no vertex data to load for now
+    const std::vector<Vertex> vertices = {
+        {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+    };
+
+    auto vertexBindingDesc = RenderingUtilities::GetBindingDescription();
+    auto vertexAttributeDescs = RenderingUtilities::GetAttributeDescriptions();
+
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount = 0;
-    vertexInputInfo.pVertexBindingDescriptions = nullptr; // optional
-    vertexInputInfo.vertexAttributeDescriptionCount = 0;
-    vertexInputInfo.pVertexAttributeDescriptions = nullptr; // optional
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.pVertexBindingDescriptions = &vertexBindingDesc; // optional
+    vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexAttributeDescs.size());
+    vertexInputInfo.pVertexAttributeDescriptions = vertexAttributeDescs.data(); // optional
 
     // create info: input assembly
     //> what kind of geometry/topology will be drawn from the vertices
