@@ -14,9 +14,11 @@ public:
         VulkanRenderPipeline* renderPipeline,
         VkQueue GraphicsQueue,
         VkQueue vkPresentQueue);
-
+    
     void Render();
     void CleanUp();
+
+    bool IsSwapChainDirty() const;
 
 private:
 
@@ -36,6 +38,8 @@ private:
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore renderFinishedSemaphore;
     VkFence isDoneRenderingFence;
+
+    bool isSwapChainDirty;
 
     // commands
     void vulkanCreateCommandPool(uint32_t graphicsFamilyIndex);

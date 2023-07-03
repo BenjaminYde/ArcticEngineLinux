@@ -18,6 +18,15 @@ void VulkanContext::Cleanup()
 
 void VulkanContext::Render()
 {
-    VulkanRenderLoop renderLoop = pVulkanLoader->GetRenderLoop();
-    renderLoop.Render();
+    // get renderloop
+    VulkanRenderLoop* renderLoop = pVulkanLoader->GetRenderLoop();
+
+    // reload swapchain when dirty
+    if(renderLoop->IsSwapChainDirty())
+    {
+        pVulkanLoader->ReloadSwapChain();
+    }
+
+    // render
+    renderLoop->Render();
 }

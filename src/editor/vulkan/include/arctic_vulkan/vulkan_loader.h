@@ -16,7 +16,8 @@ public:
     VulkanLoader(VulkanWindow* vulkanWindow);
     void Cleanup();
 
-    const VulkanRenderLoop& GetRenderLoop();
+    VulkanRenderLoop* GetRenderLoop();
+    void ReloadSwapChain();
 
 private:
 

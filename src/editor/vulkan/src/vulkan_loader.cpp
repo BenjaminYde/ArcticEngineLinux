@@ -11,9 +11,20 @@
 #include "arctic_vulkan/vulkan_renderloop.h"
 #include "arctic_vulkan/vulkan_swapchain.h"
 
-const VulkanRenderLoop& VulkanLoader::GetRenderLoop()
+VulkanRenderLoop* VulkanLoader::GetRenderLoop()
 {
-    return *pRenderLoop;
+    return pRenderLoop;
+}
+
+void VulkanLoader::ReloadSwapChain()
+{
+    // re-create swapchain and re-load dependencies on swapchain data
+    pSwapchain->CleanUp(vkDevice);
+    pSwapchain->CreateSwapChain();
+
+    pRenderPipeline->Load(
+        pSwapchain->GetData(), 
+        pSwapchain->GetImageViews());
 }
 
 VulkanLoader::VulkanLoader(VulkanWindow* vulkanWindow)

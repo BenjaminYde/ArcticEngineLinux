@@ -38,8 +38,14 @@ void VulkanRenderLoop::CleanUp()
     vkDestroyCommandPool(vkDevice, vkCommandPool, nullptr);
 }
 
+bool VulkanRenderLoop::IsSwapChainDirty() const
+{
+    return this->isSwapChainDirty;
+}
+
 void VulkanRenderLoop::Render()
 {
+
     // wait until previous frame is finished
     //// todo: implement multiple frames in flight. this avoids idle time (cpu waiting for gpu & vice versa)
     //// https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Frames_in_flight
@@ -55,16 +61,14 @@ void VulkanRenderLoop::Render()
     {   
         // wait until idle
         vkDeviceWaitIdle(vkDevice);
-
-        // re-create swapchain and re-load dependencies on swapchain data
-        pSwapchain->CleanUp(vkDevice);
-        pSwapchain->CreateSwapChain();
-
-        pRenderPipeline->Load(
-            pSwapchain->GetData(), 
-            pSwapchain->GetImageViews());
         
+        // mark dirty
+        this->isSwapChainDirty = true;
         return;
+    }
+    else
+    {
+        this->isSwapChainDirty = false;
     }
 
     // reset fence state to zero
