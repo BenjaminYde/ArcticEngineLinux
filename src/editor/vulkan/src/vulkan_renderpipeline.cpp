@@ -5,11 +5,10 @@
 #include "utilities/file_utility.h"
 #include "utilities/application.h"
 
-#include "arctic_rendering/vertex.h"
 #include "arctic_vulkan/rendering_utilities.h"
 
 VulkanRenderPipeline::VulkanRenderPipeline(
-    const VkDevice & vkDevice, 
+    const VkDevice& vkDevice, 
     uint32_t graphicsFamilyIndex)
     :
     vkDevice(vkDevice),
@@ -201,12 +200,6 @@ void VulkanRenderPipeline::createPipeline()
     //> describes the format of the vertex data that will be passed to the vertex shader
     //> bindings: spacing between data and whether the data is per-vertex or per-instance
     //> attribute descriptions: type of the attributes passed to the vertex shader, which binding to load them from and at which offset
-    const std::vector<Vertex> vertices = {
-        {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
-    };
-
     auto vertexBindingDesc = RenderingUtilities::GetBindingDescription();
     auto vertexAttributeDescs = RenderingUtilities::GetAttributeDescriptions();
 

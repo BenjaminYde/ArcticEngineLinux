@@ -1,18 +1,23 @@
 #include "arctic_vulkan/vulkan_renderloop.h"
 #include <iostream>
+#include <cstring>
 #include "arctic_vulkan/vulkan_swapchain.h"
 #include "arctic_vulkan/vulkan_renderpipeline.h"
+#include "arctic_vulkan/vulkan_memory_handler.h"
+#include "arctic_rendering/vertex.h"
 
 VulkanRenderLoop::VulkanRenderLoop(
     VkDevice vkDevice, 
     VulkanSwapChain* swapChain, 
     VulkanRenderPipeline* renderPipeline, 
+    VulkanMemoryHandler* vkMemoryHandler, 
     VkQueue graphicsQueue, 
     VkQueue presentQueue)
     :
     vkDevice(vkDevice),
     pSwapchain(swapChain),
     pRenderPipeline(renderPipeline),
+    vkMemoryHandler(vkMemoryHandler),
     vkGraphicsQueue(graphicsQueue),
     vkPresentQueue(presentQueue)
 {
@@ -22,6 +27,15 @@ VulkanRenderLoop::VulkanRenderLoop(
 
     // syncing
     vulkanCreateSyncObjects();
+
+    // create vertex buffer
+    const std::vector<Vertex> vertices = {
+        {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.0f, 1.0f, 1.0f}},
+        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+    };
+
+    createVertexBuffer(vertices);
 }
 
 void VulkanRenderLoop::CleanUp()
@@ -36,6 +50,10 @@ void VulkanRenderLoop::CleanUp()
 
     // command pool & buffer
     vkDestroyCommandPool(vkDevice, vkCommandPool, nullptr);
+
+    // buffers
+    vkDestroyBuffer(vkDevice, vertexBuffer, nullptr);
+    vkFreeMemory(vkDevice, vertexBufferMemory, nullptr);
 }
 
 bool VulkanRenderLoop::IsSwapChainDirty() const
@@ -159,6 +177,56 @@ void VulkanRenderLoop::vulkanCreateCommandBuffer()
     }
 }
 
+bool VulkanRenderLoop::createVertexBuffer(std::vector<Vertex> vertices)
+{
+    // create vertex buffer
+    VkBufferCreateInfo bufferInfo{};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = sizeof(vertices[0]) * vertices.size();
+    bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    VkResult result = vkCreateBuffer(vkDevice, &bufferInfo, nullptr, &vertexBuffer);
+    if (result != VK_SUCCESS)
+    {
+        std::cout <<"error: vulkan: failed to create vertex buffer!";
+        return false;
+    }
+
+    // allocate memory for vertex buffer
+    VkMemoryRequirements vbMemoryRequirements;
+    vkGetBufferMemoryRequirements(vkDevice, vertexBuffer, &vbMemoryRequirements);
+
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = vbMemoryRequirements.size;
+
+    uint32_t memoryTypeIndex;
+    vkMemoryHandler->FindMemoryType(
+        vbMemoryRequirements.memoryTypeBits, 
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+        memoryTypeIndex);
+    allocInfo.memoryTypeIndex = memoryTypeIndex;
+    
+    result = vkAllocateMemory(vkDevice, &allocInfo, nullptr, &vertexBufferMemory);
+    if (result != VK_SUCCESS)
+    {
+        std::cout <<"error: vulkan: failed to allocate memory for vertex buffer!";
+        return false;
+    }
+
+    // bind the memory to the buffer
+    vkBindBufferMemory(vkDevice, vertexBuffer, vertexBufferMemory, 0);
+
+    // copy vertices to memory
+    void* data;
+    vkMapMemory(vkDevice, vertexBufferMemory, 0, bufferInfo.size, 0, &data);
+        memcpy(data, vertices.data(), (size_t) bufferInfo.size);
+    vkUnmapMemory(vkDevice, vertexBufferMemory);
+    
+    return true;
+}
+
 void VulkanRenderLoop::vulkanRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
     // command buffer: begin
@@ -211,8 +279,14 @@ void VulkanRenderLoop::vulkanRecordCommandBuffer(VkCommandBuffer commandBuffer, 
     scissor.extent = swapChainData.extent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
+    // command buffer: bind vertex buffer   
+    VkBuffer vertexBuffers[] = {vertexBuffer};
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
     // command buffer: draw
-    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+    uint32_t vertexCount = 3;
+    vkCmdDraw(commandBuffer,vertexCount, 1, 0, 0);
 
     // command buffer: end render pass
     vkCmdEndRenderPass(commandBuffer);

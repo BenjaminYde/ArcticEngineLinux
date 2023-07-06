@@ -10,6 +10,7 @@
 #include "arctic_vulkan/vulkan_renderpipeline.h"
 #include "arctic_vulkan/vulkan_renderloop.h"
 #include "arctic_vulkan/vulkan_swapchain.h"
+#include "arctic_vulkan/vulkan_memory_handler.h"
 
 VulkanRenderLoop* VulkanLoader::GetRenderLoop()
 {
@@ -57,6 +58,11 @@ VulkanLoader::VulkanLoader(VulkanWindow* vulkanWindow)
 
     pSwapchain->CreateSwapChain();
 
+    // create vulkan memory handler
+    auto vulkanMemoryHandler = new VulkanMemoryHandler(
+        vkPhysicalDevice
+    );
+
     // create render pipeline
     pRenderPipeline = new VulkanRenderPipeline(
         vkDevice,
@@ -71,6 +77,7 @@ VulkanLoader::VulkanLoader(VulkanWindow* vulkanWindow)
         vkDevice, 
         pSwapchain, 
         pRenderPipeline, 
+        vulkanMemoryHandler,
         vkGraphicsQueue, 
         vkPresentQueue);
 }

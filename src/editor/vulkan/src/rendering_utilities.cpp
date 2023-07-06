@@ -32,5 +32,5 @@ std::array<VkVertexInputAttributeDescription, 2> RenderingUtilities::GetAttribut
     attributeDescs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
     attributeDescs[1].offset = offsetof(Vertex, color);
 
-    return std::array<VkVertexInputAttributeDescription, 2>();
+    return attributeDescs;
 }

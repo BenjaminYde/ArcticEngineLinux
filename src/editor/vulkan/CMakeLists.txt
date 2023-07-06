@@ -25,6 +25,7 @@ target_sources(${TARGET}
         ${SRC_DIR}/vulkan_swapchain.cpp
         ${SRC_DIR}/vulkan_loader.cpp
         ${SRC_DIR}/vulkan_window.cpp
+        ${SRC_DIR}/vulkan_memory_handler.cpp
         ${SRC_DIR}/rendering_utilities.cpp
         )
 

@@ -96,4 +96,7 @@ private:
             VkDebugUtilsMessageTypeFlagsEXT messageType,
             const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
             void* pUserData);
+
+    // memory
+    VkPhysicalDeviceMemoryProperties memProperties;
 };
