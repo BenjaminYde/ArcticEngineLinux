@@ -9,10 +9,12 @@
 
 VulkanRenderPipeline::VulkanRenderPipeline(
     const VkDevice& vkDevice, 
-    uint32_t graphicsFamilyIndex)
+    uint32_t graphicsFamilyIndex,
+    uint32_t transferFamilyIndex)
     :
     vkDevice(vkDevice),
-    graphicsFamilyIndex(graphicsFamilyIndex)
+    graphicsFamilyIndex(graphicsFamilyIndex),
+    transferFamilyIndex(transferFamilyIndex)
 {
 }
 
@@ -45,6 +47,11 @@ void VulkanRenderPipeline::CleanUp()
 uint32_t VulkanRenderPipeline::GetGraphicsFamilyIndex()
 {
     return this->graphicsFamilyIndex;
+}
+
+uint32_t VulkanRenderPipeline::GetTransferFamilyIndex()
+{
+    return this->transferFamilyIndex;
 }
 
 const VkRenderPass &VulkanRenderPipeline::GetRenderPass()

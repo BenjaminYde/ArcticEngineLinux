@@ -9,7 +9,8 @@ class VulkanRenderPipeline
 public:
   VulkanRenderPipeline(
     const VkDevice& device,
-    uint32_t graphicsFamilyIndex); 
+    uint32_t graphicsFamilyIndex,
+    uint32_t transferFamilyIndex); 
 
   void Load(
     const SwapChainData & swapChainData, 
@@ -18,6 +19,7 @@ public:
   void CleanUp();
 
   uint32_t GetGraphicsFamilyIndex();
+  uint32_t GetTransferFamilyIndex();
   const VkRenderPass& GetRenderPass();
   const VkPipeline& GetPipeline();
   const VkFramebuffer& GetFrameBuffer(uint32_t index);
@@ -25,6 +27,7 @@ public:
 private:
     VkDevice vkDevice = VK_NULL_HANDLE;
     uint32_t graphicsFamilyIndex;
+    uint32_t transferFamilyIndex;
     SwapChainData swapChainData;
     std::vector<VkImageView> swapChainImageViews;
 

@@ -17,6 +17,7 @@ public:
         VulkanRenderPipeline* renderPipeline,
         VulkanMemoryHandler* vkMemoryHandler, 
         VkQueue GraphicsQueue,
+        VkQueue vkTransferQueue,
         VkQueue vkPresentQueue);
     
     void Render();
@@ -32,10 +33,12 @@ private:
     VulkanRenderPipeline* pRenderPipeline;
 
     // commands
-    VkCommandPool vkCommandPool;
+    VkCommandPool vkCommandPoolGraphics;
+    VkCommandPool vkCommandPoolTransfer;
     VkCommandBuffer vkCommandBuffer;
 
     VkQueue vkGraphicsQueue;
+    VkQueue vkTransferQueue;
     VkQueue vkPresentQueue;
 
     // syncing
@@ -47,12 +50,15 @@ private:
 
     // memory
     VulkanMemoryHandler* vkMemoryHandler;
-    
+
+    VkBuffer vertexBufferStaging;
+    VkDeviceMemory vertexBufferMemoryStaging;
+
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
 
     // commands
-    void vulkanCreateCommandPool(uint32_t graphicsFamilyIndex);
+    void vulkanCreateCommandPool(uint32_t graphicsFamilyIndex, uint32_t transferFamilyIndex);
     void vulkanCreateCommandBuffer();
     
     void vulkanRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);

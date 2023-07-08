@@ -59,14 +59,18 @@ VulkanLoader::VulkanLoader(VulkanWindow* vulkanWindow)
     pSwapchain->CreateSwapChain();
 
     // create vulkan memory handler
-    auto vulkanMemoryHandler = new VulkanMemoryHandler(
-        vkPhysicalDevice
+    pMemoryHandler = new VulkanMemoryHandler(
+        vkDevice,
+        vkPhysicalDevice,
+        vkGraphicsQueue,
+        vkTransferQueue
     );
 
     // create render pipeline
     pRenderPipeline = new VulkanRenderPipeline(
         vkDevice,
-        queueFamilyIndices.graphicsFamily.value());
+        queueFamilyIndices.graphicsFamily.value(),
+        queueFamilyIndices.transferFamily.value());
 
     pRenderPipeline->Load(
         pSwapchain->GetData(), 
@@ -77,8 +81,9 @@ VulkanLoader::VulkanLoader(VulkanWindow* vulkanWindow)
         vkDevice, 
         pSwapchain, 
         pRenderPipeline, 
-        vulkanMemoryHandler,
+        pMemoryHandler,
         vkGraphicsQueue, 
+        vkTransferQueue, 
         vkPresentQueue);
 }
 
@@ -86,6 +91,9 @@ void VulkanLoader::Cleanup()
 {
     // wait until device is not executing work
     vkDeviceWaitIdle(vkDevice);
+
+    // memory
+    delete pMemoryHandler;
 
     // render loop
     pRenderLoop->CleanUp();
@@ -247,7 +255,7 @@ void VulkanLoader::vulkanCreateLogicalDevice(const VkPhysicalDevice & vkPhysical
     // >> create set of queue families (re-use queue families instead of creating duplicates)
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 
-    std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+    std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value(), indices.transferFamily.value() };
 
     float queuePriority = 1.0f;
     for(uint32_t queueFamily : uniqueQueueFamilies)
@@ -286,6 +294,9 @@ void VulkanLoader::vulkanCreateLogicalDevice(const VkPhysicalDevice & vkPhysical
 
     // get graphics queue
     vkGetDeviceQueue(vkDevice, indices.graphicsFamily.value(), 0, &vkGraphicsQueue);
+
+    // get transfer queue
+    vkGetDeviceQueue(vkDevice, indices.transferFamily.value(), 0, &vkTransferQueue);
 
     // get present queue
     vkGetDeviceQueue(vkDevice, indices.presentFamily.value(), 0, &vkPresentQueue);
@@ -341,8 +352,15 @@ VulkanLoader::QueueFamilyIndices VulkanLoader::findQueueFamilies(const VkPhysica
     for(const auto& queueFamily : queueFamilies)
     {
         // set graphics family
-        if(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        if(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT && 
+           !queueFamilyIndices.graphicsFamily.has_value())
             queueFamilyIndices.graphicsFamily = familyIndex;
+
+        // set transfer family
+        if((queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT) && 
+          !(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) && 
+            !queueFamilyIndices.transferFamily.has_value())
+            queueFamilyIndices.transferFamily = familyIndex;
 
         // set present family
         VkBool32 isPresentSupport = false;
