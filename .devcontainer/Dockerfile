@@ -216,6 +216,17 @@ RUN cd /tmp/SDL2-${SDL_VERSION} && \
     cmake --install /opt/SDL2-${SDL_VERSION}
 #ENV CMAKE_PREFIX_PATH="/opt/SDL2-${SDL_VERSION}:${CMAKE_PREFIX_PATH}"
 
+# Install RenderDoc
+ENV RENDERDOC_VERSION 1.27
+RUN cd /tmp && \
+    curl -L -O https://renderdoc.org/stable/${RENDERDOC_VERSION}/renderdoc_${RENDERDOC_VERSION}.tar.gz \
+    && tar -xzf renderdoc_${RENDERDOC_VERSION}.tar.gz -C /opt \
+    && rm renderdoc_${RENDERDOC_VERSION}.tar.gz
+
+# Set RenderDoc binary in PATH
+ENV PATH="/opt/renderdoc_${RENDERDOC_VERSION}/bin:${PATH}"
+RUN sudo apt-get install libproxy1v5
+
 # Install ZSH
 RUN sudo apt install -y zsh && \
     sudo chsh -s /usr/bin/zsh && \
