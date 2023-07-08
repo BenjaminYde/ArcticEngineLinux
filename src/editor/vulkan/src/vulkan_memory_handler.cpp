@@ -35,7 +35,7 @@ bool VulkanMemoryHandler::CreateBuffer(
     bufferInfo.size = size;
     bufferInfo.usage = usage;
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
+    // the following may be needed when using CONCURRENT sharing mode
     //bufferInfo.queueFamilyIndexCount = 2;
     //std::vector<uint32_t> allowedQueueIndices { 0, 1};
     //bufferInfo.pQueueFamilyIndices = allowedQueueIndices.data();

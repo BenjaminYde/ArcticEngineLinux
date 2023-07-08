@@ -222,10 +222,15 @@ RUN cd /tmp && \
     curl -L -O https://renderdoc.org/stable/${RENDERDOC_VERSION}/renderdoc_${RENDERDOC_VERSION}.tar.gz \
     && tar -xzf renderdoc_${RENDERDOC_VERSION}.tar.gz -C /opt \
     && rm renderdoc_${RENDERDOC_VERSION}.tar.gz
-
-# Set RenderDoc binary in PATH
 ENV PATH="/opt/renderdoc_${RENDERDOC_VERSION}/bin:${PATH}"
 RUN sudo apt-get install libproxy1v5
+
+# Install RenderDoc extensions
+ENV RENDERDOC_VERSION 1.27
+RUN cd /tmp && \
+    curl -L -O https://renderdoc.org/stable/${RENDERDOC_VERSION}/renderdoc_${RENDERDOC_VERSION}.tar.gz \
+    && tar -xzf renderdoc_${RENDERDOC_VERSION}.tar.gz -C /opt \
+    && rm renderdoc_${RENDERDOC_VERSION}.tar.gz
 
 # Install ZSH
 RUN sudo apt install -y zsh && \

@@ -199,13 +199,15 @@ void VulkanRenderLoop::vulkanCreateCommandBuffer()
 
 bool VulkanRenderLoop::createVertexBuffer(std::vector<Vertex> vertices)
 {   
-    bool useStagingBuffer = false;
+    bool useStagingBuffer = true;
     if(useStagingBuffer)
     {
+        VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+
         // create vertex buffer: staging (cpu interaction)
         // >> Buffer can be used as source in a memory transfer operation
         {
-            VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+            
             VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
             VkMemoryPropertyFlags memoryPropeties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
@@ -223,7 +225,6 @@ bool VulkanRenderLoop::createVertexBuffer(std::vector<Vertex> vertices)
         // >> Buffer can be used as destination in a memory transfer operation
         // >> The finalvertexBuffer is allocated from a memory type that is device local, which generally means that we're not able to use vkMapMemory
         {
-            VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
             VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
             VkMemoryPropertyFlags memoryPropeties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
@@ -232,7 +233,7 @@ bool VulkanRenderLoop::createVertexBuffer(std::vector<Vertex> vertices)
         }
 
         // copy vertex buffer data from stating to final
-        vkMemoryHandler->CopyBuffer(this->vertexBufferStaging, this->vertexBuffer, (VkDeviceSize) vertices.size(), this->vkCommandPoolTransfer);
+        vkMemoryHandler->CopyBuffer(this->vertexBufferStaging, this->vertexBuffer, bufferSize, this->vkCommandPoolTransfer);
 
         // cleanup vertex buffer staging (not used anymore)
         vkDestroyBuffer(this->vkDevice, this->vertexBufferStaging, nullptr);
