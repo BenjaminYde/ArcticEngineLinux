@@ -51,11 +51,10 @@ private:
     // memory
     VulkanMemoryHandler* vkMemoryHandler;
 
-    VkBuffer vertexBufferStaging;
-    VkDeviceMemory vertexBufferMemoryStaging;
-
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
+    VkBuffer indexBuffer;
+    VkDeviceMemory indexBufferMemory;
 
     // commands
     void vulkanCreateCommandPool(uint32_t graphicsFamilyIndex, uint32_t transferFamilyIndex);
@@ -65,6 +64,7 @@ private:
 
     // memory
     bool createVertexBuffer(std::vector<Vertex> vertices);
+    bool createIndexBuffer(std::vector<uint32_t> indices);
 
     // syncing
     void vulkanCreateSyncObjects();
