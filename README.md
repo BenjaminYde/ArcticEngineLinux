@@ -12,7 +12,7 @@ Use `graphviz` to visualize the dependency graph:
 
 ```sh
 cd /path/to/your/build
-cmake --graphviz=graph.dot ..
+cmake --graphviz=graph.dot .
 dot -Tpng graph.dot -o graph.png
 ```
 # Vulkan Test
@@ -29,3 +29,13 @@ and
 ```sh
 vkvia
 ```
+
+# Renderdoc
+
+1. Open the terminal 
+1. Enter the following command to open renderdoc:
+    ```bash
+    qrenderdoc
+    ```
+1. Inside the app, a warning should tell you that vulkan needs to be configured for renderdoc
+   Click on that warning, that enables you to generate the config. Make sure to generate in the user and not root.

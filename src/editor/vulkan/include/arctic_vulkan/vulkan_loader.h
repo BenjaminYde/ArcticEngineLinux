@@ -9,6 +9,7 @@ class VulkanWindow;
 class VulkanRenderPipeline;
 class VulkanSwapChain;
 class VulkanRenderLoop;
+class VulkanMemoryHandler;
 
 class VulkanLoader
 {
@@ -28,6 +29,7 @@ private:
     VkDevice vkDevice = VK_NULL_HANDLE;
 
     VkQueue vkGraphicsQueue;
+    VkQueue vkTransferQueue;
     VkQueue vkPresentQueue;
 
     const std::vector<const char*> requiredDeviceExtensions = {
@@ -38,11 +40,13 @@ private:
     {
         std::optional<uint32_t> graphicsFamily;
         std::optional<uint32_t> presentFamily;
+        std::optional<uint32_t> transferFamily;
 
         bool IsComplete()
         {
             return  graphicsFamily.has_value() &&
-                    presentFamily.has_value();
+                    presentFamily.has_value() &&
+                    transferFamily.has_value();
         }
     };
 
@@ -50,6 +54,7 @@ private:
     VulkanSwapChain* pSwapchain;
     VulkanRenderPipeline* pRenderPipeline;
     VulkanRenderLoop* pRenderLoop;
+    VulkanMemoryHandler* pMemoryHandler;
 
     void vulkanCreateInstance(VulkanWindow & vulkanWindow);
     void vulkanLoadDebugMessenger();
@@ -96,4 +101,7 @@ private:
             VkDebugUtilsMessageTypeFlagsEXT messageType,
             const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
             void* pUserData);
+
+    // memory
+    VkPhysicalDeviceMemoryProperties memProperties;
 };

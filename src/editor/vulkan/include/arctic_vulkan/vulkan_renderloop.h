@@ -1,9 +1,12 @@
 #pragma once
 
+#include <vector>
 #include <vulkan/vulkan_core.h>
 
 class VulkanSwapChain;
 class VulkanRenderPipeline;
+class VulkanMemoryHandler;
+class Vertex;
 
 class VulkanRenderLoop
 {
@@ -12,7 +15,9 @@ public:
         VkDevice vkDevice,
         VulkanSwapChain* swapChain, 
         VulkanRenderPipeline* renderPipeline,
+        VulkanMemoryHandler* vkMemoryHandler, 
         VkQueue GraphicsQueue,
+        VkQueue vkTransferQueue,
         VkQueue vkPresentQueue);
     
     void Render();
@@ -28,10 +33,12 @@ private:
     VulkanRenderPipeline* pRenderPipeline;
 
     // commands
-    VkCommandPool vkCommandPool;
+    VkCommandPool vkCommandPoolGraphics;
+    VkCommandPool vkCommandPoolTransfer;
     VkCommandBuffer vkCommandBuffer;
 
     VkQueue vkGraphicsQueue;
+    VkQueue vkTransferQueue;
     VkQueue vkPresentQueue;
 
     // syncing
@@ -41,12 +48,24 @@ private:
 
     bool isSwapChainDirty;
 
-    // commands
-    void vulkanCreateCommandPool(uint32_t graphicsFamilyIndex);
-    void vulkanCreateCommandBuffer();
+    // memory
+    VulkanMemoryHandler* vkMemoryHandler;
 
-    void vulkanRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    VkBuffer vertexBuffer;
+    VkDeviceMemory vertexBufferMemory;
+    VkBuffer indexBuffer;
+    VkDeviceMemory indexBufferMemory;
+
+    // commands
+    void vulkanCreateCommandPool(uint32_t graphicsFamilyIndex, uint32_t transferFamilyIndex);
+    void vulkanCreateCommandBuffer();
     
+    void vulkanRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+
+    // memory
+    bool createVertexBuffer(std::vector<Vertex> vertices);
+    bool createIndexBuffer(std::vector<uint32_t> indices);
+
     // syncing
     void vulkanCreateSyncObjects();
 };

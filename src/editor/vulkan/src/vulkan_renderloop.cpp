@@ -1,27 +1,58 @@
 #include "arctic_vulkan/vulkan_renderloop.h"
 #include <iostream>
+#include <cstring>
 #include "arctic_vulkan/vulkan_swapchain.h"
 #include "arctic_vulkan/vulkan_renderpipeline.h"
+#include "arctic_vulkan/vulkan_memory_handler.h"
+#include "arctic_rendering/vertex.h"
 
 VulkanRenderLoop::VulkanRenderLoop(
     VkDevice vkDevice, 
     VulkanSwapChain* swapChain, 
     VulkanRenderPipeline* renderPipeline, 
+    VulkanMemoryHandler* vkMemoryHandler, 
     VkQueue graphicsQueue, 
+    VkQueue transferQueue, 
     VkQueue presentQueue)
     :
     vkDevice(vkDevice),
     pSwapchain(swapChain),
     pRenderPipeline(renderPipeline),
+    vkMemoryHandler(vkMemoryHandler),
     vkGraphicsQueue(graphicsQueue),
+    vkTransferQueue(transferQueue),
     vkPresentQueue(presentQueue)
 {
     // create command pool and buffer
-    vulkanCreateCommandPool(renderPipeline->GetGraphicsFamilyIndex());
+    vulkanCreateCommandPool(renderPipeline->GetGraphicsFamilyIndex(), renderPipeline->GetTransferFamilyIndex());
     vulkanCreateCommandBuffer();
 
     // syncing
     vulkanCreateSyncObjects();
+
+    // create vertex buffer
+    const std::vector<Vertex> vertices = {
+        {{-0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}},
+        {{0.5f, -0.5f}, {0.0f, 1.0f, 1.0f}},
+        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+        {{-0.5f, 0.5f}, {0.0f, 1.0f, 0.25f}}
+    };
+
+    const std::vector<uint32_t> indices = {
+        0, 1, 2, 2, 3, 0
+    };
+
+    if(!createVertexBuffer(vertices))
+    {
+        std::cout << "error: vulkan: failed to create vertex buffer!";
+        return;
+    }
+
+    if(!createIndexBuffer(indices))
+    {
+        std::cout << "error: vulkan: failed to create index buffer!";
+        return;
+    }
 }
 
 void VulkanRenderLoop::CleanUp()
@@ -35,7 +66,12 @@ void VulkanRenderLoop::CleanUp()
     vkDestroyFence(vkDevice, isDoneRenderingFence, nullptr);
 
     // command pool & buffer
-    vkDestroyCommandPool(vkDevice, vkCommandPool, nullptr);
+    vkDestroyCommandPool(vkDevice, vkCommandPoolGraphics, nullptr);
+    vkDestroyCommandPool(vkDevice, vkCommandPoolTransfer, nullptr);
+
+    // buffers
+    vkDestroyBuffer(vkDevice, vertexBuffer, nullptr);
+    vkFreeMemory(vkDevice, vertexBufferMemory, nullptr);
 }
 
 bool VulkanRenderLoop::IsSwapChainDirty() const
@@ -45,7 +81,6 @@ bool VulkanRenderLoop::IsSwapChainDirty() const
 
 void VulkanRenderLoop::Render()
 {
-
     // wait until previous frame is finished
     //// todo: implement multiple frames in flight. this avoids idle time (cpu waiting for gpu & vice versa)
     //// https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Frames_in_flight
@@ -124,7 +159,7 @@ void VulkanRenderLoop::Render()
     vkQueuePresentKHR(vkPresentQueue, &presentInfo);
 }
 
-void VulkanRenderLoop::vulkanCreateCommandPool(uint32_t graphicsFamilyIndex)
+void VulkanRenderLoop::vulkanCreateCommandPool(uint32_t graphicsFamilyIndex, uint32_t transferFamilyIndex)
 {
     // create info: command pool
     VkCommandPoolCreateInfo poolInfo{};
@@ -133,7 +168,21 @@ void VulkanRenderLoop::vulkanCreateCommandPool(uint32_t graphicsFamilyIndex)
     poolInfo.queueFamilyIndex = graphicsFamilyIndex;
 
     // create command pool
-    VkResult result = vkCreateCommandPool(vkDevice, &poolInfo, nullptr, &vkCommandPool);
+    VkResult result = vkCreateCommandPool(vkDevice, &poolInfo, nullptr, &vkCommandPoolGraphics);
+    if (result != VK_SUCCESS)
+    {
+        std::cout << "error: vulkan: failed to create command pool!";
+        return;
+    }
+
+    // create info: command pool
+    VkCommandPoolCreateInfo poolInfo2{};
+    poolInfo2.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo2.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    poolInfo2.queueFamilyIndex = transferFamilyIndex;
+
+    // create command pool
+    result = vkCreateCommandPool(vkDevice, &poolInfo2, nullptr, &vkCommandPoolTransfer);
     if (result != VK_SUCCESS)
     {
         std::cout << "error: vulkan: failed to create command pool!";
@@ -146,7 +195,7 @@ void VulkanRenderLoop::vulkanCreateCommandBuffer()
     // create info: command buffer allocation
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = vkCommandPool;
+    allocInfo.commandPool = vkCommandPoolGraphics;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY; // can be submitted to a queue for execution, but cannot be called from other command buffers
     allocInfo.commandBufferCount = 1;
 
@@ -157,6 +206,129 @@ void VulkanRenderLoop::vulkanCreateCommandBuffer()
         std::cout << "error: vulkan: failed to create command buffer!";
         return;
     }
+}
+
+bool VulkanRenderLoop::createVertexBuffer(std::vector<Vertex> vertices)
+{   
+    bool useStagingBuffer = true;
+    if(useStagingBuffer)
+    {
+        VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+
+        VkBuffer vertexBufferStaging;
+        VkDeviceMemory vertexBufferMemoryStaging;
+
+        // create vertex buffer: staging (cpu interaction)
+        // >> Buffer can be used as source in a memory transfer operation
+        {
+            VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            VkMemoryPropertyFlags memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+            if(!vkMemoryHandler->CreateBuffer(bufferSize, usage, memoryProperties, vertexBufferStaging, vertexBufferMemoryStaging))
+                return false;
+        
+            // copy vertices to memory
+            void* data;
+            vkMapMemory(this->vkDevice, vertexBufferMemoryStaging, 0, bufferSize, 0, &data);
+                memcpy(data, vertices.data(), (size_t) bufferSize);
+            vkUnmapMemory(this->vkDevice, vertexBufferMemoryStaging);
+        }
+
+        // create vertex buffer: final (gpu interaction)
+        // >> Buffer can be used as destination in a memory transfer operation
+        // >> The finalvertexBuffer is allocated from a memory type that is device local, which generally means that we're not able to use vkMapMemory
+        {
+            VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+            VkMemoryPropertyFlags memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+            if(!vkMemoryHandler->CreateBuffer(bufferSize, usage, memoryProperties, this->vertexBuffer, this->vertexBufferMemory))
+                return false;
+        }
+
+        // copy vertex buffer data from stating to final
+        vkMemoryHandler->CopyBuffer(vertexBufferStaging, this->vertexBuffer, bufferSize, this->vkCommandPoolTransfer);
+
+        // cleanup vertex buffer staging (not used anymore)
+        vkDestroyBuffer(this->vkDevice, vertexBufferStaging, nullptr);
+        vkFreeMemory(this->vkDevice, vertexBufferMemoryStaging, nullptr);
+    }
+    else
+    {
+        VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+        VkBufferUsageFlags usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        VkMemoryPropertyFlags memoryPropeties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+        if(!vkMemoryHandler->CreateBuffer(bufferSize, usage, memoryPropeties, this->vertexBuffer, this->vertexBufferMemory))
+            return false;
+
+        void* data;
+        vkMapMemory(this->vkDevice, this->vertexBufferMemory, 0, bufferSize, 0, &data);
+            memcpy(data, vertices.data(), (size_t) bufferSize);
+        vkUnmapMemory(this->vkDevice, this->vertexBufferMemory);
+    }
+
+    return true;
+}
+
+bool VulkanRenderLoop::createIndexBuffer(std::vector<uint32_t> indices)
+{
+    bool useStagingBuffer = true;
+    if(useStagingBuffer)
+    {
+        VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+        VkBuffer indexBufferStaging;
+        VkDeviceMemory indexBufferMemoryStaging;
+
+        // create index buffer: staging (cpu interaction)
+        // >> Buffer can be used as source in a memory transfer operation
+        {
+            VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            VkMemoryPropertyFlags memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+            if(!vkMemoryHandler->CreateBuffer(bufferSize, usage, memoryProperties, indexBufferStaging, indexBufferMemoryStaging))
+                return false;
+        
+            // copy indices to memory
+            void* data;
+            vkMapMemory(this->vkDevice, indexBufferMemoryStaging, 0, bufferSize, 0, &data);
+                memcpy(data, indices.data(), (size_t) bufferSize);
+            vkUnmapMemory(this->vkDevice, indexBufferMemoryStaging);
+        }
+
+        // create index buffer: final (gpu interaction)
+        // >> Buffer can be used as destination in a memory transfer operation
+        // >> The finalindexBuffer is allocated from a memory type that is device local, which generally means that we're not able to use vkMapMemory
+        {
+            VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+            VkMemoryPropertyFlags memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+            if(!vkMemoryHandler->CreateBuffer(bufferSize, usage, memoryProperties, this->indexBuffer, this->indexBufferMemory))
+                return false;
+        }
+
+        // copy index buffer data from stating to final
+        vkMemoryHandler->CopyBuffer(indexBufferStaging, this->indexBuffer, bufferSize, this->vkCommandPoolTransfer);
+
+        // cleanup index buffer staging (not used anymore)
+        vkDestroyBuffer(this->vkDevice, indexBufferStaging, nullptr);
+        vkFreeMemory(this->vkDevice, indexBufferMemoryStaging, nullptr);
+    }
+    else
+    {
+        VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+        VkBufferUsageFlags usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+        VkMemoryPropertyFlags memoryPropeties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+        if(!vkMemoryHandler->CreateBuffer(bufferSize, usage, memoryPropeties, this->indexBuffer, this->indexBufferMemory))
+            return false;
+
+        void* data;
+        vkMapMemory(this->vkDevice, this->indexBufferMemory, 0, bufferSize, 0, &data);
+            memcpy(data, indices.data(), (size_t) bufferSize);
+        vkUnmapMemory(this->vkDevice, this->indexBufferMemory);
+    }
+    return true;
 }
 
 void VulkanRenderLoop::vulkanRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
@@ -211,9 +383,21 @@ void VulkanRenderLoop::vulkanRecordCommandBuffer(VkCommandBuffer commandBuffer, 
     scissor.extent = swapChainData.extent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    // command buffer: draw
-    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+    // command buffer: bind vertex buffer   
+    VkBuffer vertexBuffers[] = {vertexBuffer};
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
+    // command buffer: bind index buffer
+    vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+    // command buffer: draw
+    uint32_t vertexCount = 3;
+    //vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
+
+    uint32_t indexCount = 6;
+    vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
+    
     // command buffer: end render pass
     vkCmdEndRenderPass(commandBuffer);
 

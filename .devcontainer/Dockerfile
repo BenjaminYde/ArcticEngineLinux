@@ -34,7 +34,7 @@ RUN apt -qq update && \
 # Install CMAKE
 ENV CMAKE_VERSION 3.26.3
 RUN apt update && \
-    apt -qq install -y --no-install-recommends && \
+    apt -qq install -y --no-install-recommends \
         graphviz \
     && \
     cd /tmp && \
@@ -45,15 +45,15 @@ RUN apt update && \
 ENV PATH="/opt/cmake/bin:${PATH}"
 
 # Install VCPKG
-RUN apt update && \
-    cd /tmp && \
-    wget --no-check-certificate https://github.com/microsoft/vcpkg/archive/refs/tags/2023.02.24.tar.gz && \
-    tar -xzvf 2023.02.24.tar.gz && \
-    mv vcpkg-2023.02.24 /opt/vcpkg && \
-    rm 2023.02.24.tar.gz && \
-    cd /opt/vcpkg && \
-    ./bootstrap-vcpkg.sh
-ENV PATH="/opt/vcpkg:${PATH}"
+#RUN apt update && \
+#    cd /tmp && \
+#    wget --no-check-certificate https://github.com/microsoft/vcpkg/archive/refs/tags/2023.02.24.tar.gz && \
+#    tar -xzvf 2023.02.24.tar.gz && \
+#    mv vcpkg-2023.02.24 /opt/vcpkg && \
+#    rm 2023.02.24.tar.gz && \
+#    cd /opt/vcpkg && \
+#    ./bootstrap-vcpkg.sh
+#ENV PATH="/opt/vcpkg:${PATH}"
 
 # Download Clang from source
 #ENV CLANG_VERSION 15.0.7
@@ -94,7 +94,7 @@ RUN cd /tmp && \
 ENV PATH="/opt/clang-${CLANG_VERSION}/bin:${PATH}"
 
 # Download and extract the LunarG Vulkan SDK
-ENV VULKAN_SDK_VERSION 1.3.250.0
+ENV VULKAN_SDK_VERSION 1.3.250.1
 RUN cd /tmp && \
     curl -L -O https://sdk.lunarg.com/sdk/download/${VULKAN_SDK_VERSION}/linux/vulkansdk-linux-x86_64-${VULKAN_SDK_VERSION}.tar.gz && \
     tar zxvf vulkansdk-linux-x86_64-${VULKAN_SDK_VERSION}.tar.gz && \
@@ -215,6 +215,22 @@ RUN cd /tmp/SDL2-${SDL_VERSION} && \
     #make && \
     cmake --install /opt/SDL2-${SDL_VERSION}
 #ENV CMAKE_PREFIX_PATH="/opt/SDL2-${SDL_VERSION}:${CMAKE_PREFIX_PATH}"
+
+# Install RenderDoc
+ENV RENDERDOC_VERSION 1.27
+RUN cd /tmp && \
+    curl -L -O https://renderdoc.org/stable/${RENDERDOC_VERSION}/renderdoc_${RENDERDOC_VERSION}.tar.gz \
+    && tar -xzf renderdoc_${RENDERDOC_VERSION}.tar.gz -C /opt \
+    && rm renderdoc_${RENDERDOC_VERSION}.tar.gz
+ENV PATH="/opt/renderdoc_${RENDERDOC_VERSION}/bin:${PATH}"
+RUN sudo apt-get install libproxy1v5
+
+# Install RenderDoc extensions
+ENV RENDERDOC_VERSION 1.27
+RUN cd /tmp && \
+    curl -L -O https://renderdoc.org/stable/${RENDERDOC_VERSION}/renderdoc_${RENDERDOC_VERSION}.tar.gz \
+    && tar -xzf renderdoc_${RENDERDOC_VERSION}.tar.gz -C /opt \
+    && rm renderdoc_${RENDERDOC_VERSION}.tar.gz
 
 # Install ZSH
 RUN sudo apt install -y zsh && \
