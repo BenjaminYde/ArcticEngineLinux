@@ -1,10 +1,18 @@
 #include "arctic_vulkan/vulkan_renderloop.h"
-#include <iostream>
-#include <cstring>
+
 #include "arctic_vulkan/vulkan_swapchain.h"
 #include "arctic_vulkan/vulkan_renderpipeline.h"
 #include "arctic_vulkan/vulkan_memory_handler.h"
 #include "arctic_rendering/vertex.h"
+#include "arctic_rendering/uniform_buffer_object.h"
+
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <iostream>
+#include <cstring>
+#include <chrono>
 
 VulkanRenderLoop::VulkanRenderLoop(
     VkDevice vkDevice, 
@@ -24,11 +32,11 @@ VulkanRenderLoop::VulkanRenderLoop(
     vkPresentQueue(presentQueue)
 {
     // create command pool and buffer
-    vulkanCreateCommandPool(renderPipeline->GetGraphicsFamilyIndex(), renderPipeline->GetTransferFamilyIndex());
-    vulkanCreateCommandBuffer();
+    createCommandPool(renderPipeline->GetGraphicsFamilyIndex(), renderPipeline->GetTransferFamilyIndex());
+    createCommandBuffer();
 
     // syncing
-    vulkanCreateSyncObjects();
+    createSyncObjects();
 
     // create vertex buffer
     const std::vector<Vertex> vertices = {
@@ -72,6 +80,12 @@ void VulkanRenderLoop::CleanUp()
     // buffers
     vkDestroyBuffer(vkDevice, vertexBuffer, nullptr);
     vkFreeMemory(vkDevice, vertexBufferMemory, nullptr);
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) 
+    {
+        vkDestroyBuffer(vkDevice, uniformBuffers[i], nullptr);
+        vkFreeMemory(vkDevice, uniformBuffersMemory[i], nullptr);
+    }
 }
 
 bool VulkanRenderLoop::IsSwapChainDirty() const
@@ -110,9 +124,12 @@ void VulkanRenderLoop::Render()
     // only reset the fence if we are submitting work
     vkResetFences(vkDevice, 1, &isDoneRenderingFence);
     
+    // update uniform buffers
+
+
     // record command buffer
     vkResetCommandBuffer(vkCommandBuffer, 0);
-    vulkanRecordCommandBuffer(vkCommandBuffer, availableImageIndex);
+    recordCommandBuffer(vkCommandBuffer, availableImageIndex);
 
     // create info: command buffer submit 
     VkSubmitInfo submitInfo{};
@@ -159,7 +176,7 @@ void VulkanRenderLoop::Render()
     vkQueuePresentKHR(vkPresentQueue, &presentInfo);
 }
 
-void VulkanRenderLoop::vulkanCreateCommandPool(uint32_t graphicsFamilyIndex, uint32_t transferFamilyIndex)
+void VulkanRenderLoop::createCommandPool(uint32_t graphicsFamilyIndex, uint32_t transferFamilyIndex)
 {
     // create info: command pool
     VkCommandPoolCreateInfo poolInfo{};
@@ -190,7 +207,7 @@ void VulkanRenderLoop::vulkanCreateCommandPool(uint32_t graphicsFamilyIndex, uin
     }
 }
 
-void VulkanRenderLoop::vulkanCreateCommandBuffer()
+void VulkanRenderLoop::createCommandBuffer()
 {
     // create info: command buffer allocation
     VkCommandBufferAllocateInfo allocInfo{};
@@ -331,7 +348,54 @@ bool VulkanRenderLoop::createIndexBuffer(std::vector<uint32_t> indices)
     return true;
 }
 
-void VulkanRenderLoop::vulkanRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+bool VulkanRenderLoop::createUniformBuffers()
+{   
+    // resize buffers
+    uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+    uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+    uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
+
+    // create all buffers
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) 
+    {   
+        // define buffer
+        VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+        VkBufferUsageFlags usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+        VkMemoryPropertyFlags memoryFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        
+        // create buffer
+        if(!vkMemoryHandler->CreateBuffer(bufferSize, usage, memoryFlags, this->uniformBuffers[i], this->uniformBuffersMemory[i]))
+            return false;
+
+        // map memory to buffer
+        vkMapMemory(this->vkDevice, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
+    }
+    return true;
+}
+
+void VulkanRenderLoop::updateUniformBuffer(uint32_t frameIndex)
+{
+    static auto startTime = std::chrono::high_resolution_clock::now();
+
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+    UniformBufferObject ubo{};
+    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+    auto swapchainData = pSwapchain->GetData();
+    auto swapchainExtent = swapchainData.extent;
+
+    ubo.proj = glm::perspective(glm::radians(45.0f), swapchainExtent.width / (float) swapchainExtent.height, 0.1f, 10.0f);
+
+    ubo.proj[1][1] *= -1;
+
+    memcpy(uniformBuffersMapped[frameIndex], &ubo, sizeof(ubo));
+}
+
+void VulkanRenderLoop::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
     // command buffer: begin
     VkCommandBufferBeginInfo beginInfo{};
@@ -410,7 +474,7 @@ void VulkanRenderLoop::vulkanRecordCommandBuffer(VkCommandBuffer commandBuffer, 
     }
 }
 
-void VulkanRenderLoop::vulkanCreateSyncObjects()
+void VulkanRenderLoop::createSyncObjects()
 {
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;

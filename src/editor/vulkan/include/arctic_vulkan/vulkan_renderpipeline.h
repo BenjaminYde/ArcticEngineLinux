@@ -13,8 +13,8 @@ public:
     uint32_t transferFamilyIndex); 
 
   void Load(
-    const SwapChainData & swapChainData, 
-    const std::vector<VkImageView> & swapChainImageViews);
+    const SwapChainData& swapChainData, 
+    const std::vector<VkImageView>& swapChainImageViews);
 
   void CleanUp();
 
@@ -28,17 +28,21 @@ private:
     VkDevice vkDevice = VK_NULL_HANDLE;
     uint32_t graphicsFamilyIndex;
     uint32_t transferFamilyIndex;
+
     SwapChainData swapChainData;
     std::vector<VkImageView> swapChainImageViews;
+    std::vector<VkFramebuffer> swapChainFramebuffers;
 
     VkRenderPass vkRenderPass;
+    VkDescriptorSetLayout vkDescriptorSetLayout;
     VkPipelineLayout vkPipelineLayout;
     VkPipeline vkPipeline;
-    std::vector<VkFramebuffer> swapChainFramebuffers;
 
     void createRenderPass();
     void createPipeline();
     void createFramebuffers();
+
+    void createDescriptorSetLayout();
 
     bool createShaderModule(const std::vector<char>& code, VkShaderModule& shaderModule);
 };

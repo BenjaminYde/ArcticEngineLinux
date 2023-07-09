@@ -39,6 +39,7 @@ void VulkanRenderPipeline::CleanUp()
     }
 
     // pipeline
+    vkDestroyDescriptorSetLayout(vkDevice, vkDescriptorSetLayout, nullptr);
     vkDestroyPipeline(vkDevice, vkPipeline, nullptr);
     vkDestroyPipelineLayout(vkDevice, vkPipelineLayout, nullptr);
     vkDestroyRenderPass(vkDevice, vkRenderPass, nullptr);
@@ -314,11 +315,14 @@ void VulkanRenderPipeline::createPipeline()
     colorBlending.blendConstants[2] = 0.0f; // optional
     colorBlending.blendConstants[3] = 0.0f; // optional
 
+    // create descriptor set layout
+    createDescriptorSetLayout();
+
     // create info: pipeline layout
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0; // optional
-    pipelineLayoutInfo.pSetLayouts = nullptr; // optional
+    pipelineLayoutInfo.setLayoutCount = 1; // optional
+    pipelineLayoutInfo.pSetLayouts = &this->vkDescriptorSetLayout; // optional
     pipelineLayoutInfo.pushConstantRangeCount = 0; // optional
     pipelineLayoutInfo.pPushConstantRanges = nullptr; // optional
 
@@ -397,6 +401,31 @@ void VulkanRenderPipeline::createFramebuffers()
             std::cout <<"error: vulkan: failed to create framebuffer!";
             return;
         }
+    }
+}
+
+void VulkanRenderPipeline::createDescriptorSetLayout()
+{
+    // create descriptor set layout binding: uniform buffer
+    VkDescriptorSetLayoutBinding uboLayoutBinding{};
+    uboLayoutBinding.binding = 0; // binding index in the shader
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.descriptorCount = 1;
+
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT; // we're only referencing the descriptor from the vertex shader
+    uboLayoutBinding.pImmutableSamplers = nullptr; // optional, only relevant for image sampling related descriptors
+
+    // create descriptor set layout
+    VkDescriptorSetLayoutCreateInfo dslInfo{};
+    dslInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    dslInfo.bindingCount = 1;
+    dslInfo.pBindings = &uboLayoutBinding;
+
+    VkResult result = vkCreateDescriptorSetLayout(this->vkDevice, &dslInfo, nullptr, &this->vkDescriptorSetLayout);
+    if(result != VK_SUCCESS)
+    {
+        std::cout <<"error: vulkan: failed to create descriptor set layout!";
+        return;
     }
 }
 

@@ -42,6 +42,8 @@ private:
     VkQueue vkPresentQueue;
 
     // syncing
+    const int MAX_FRAMES_IN_FLIGHT = 1;
+
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore renderFinishedSemaphore;
     VkFence isDoneRenderingFence;
@@ -53,19 +55,26 @@ private:
 
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
+
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
 
+    std::vector<VkBuffer> uniformBuffers;
+    std::vector<VkDeviceMemory> uniformBuffersMemory;
+    std::vector<void*> uniformBuffersMapped;
+
     // commands
-    void vulkanCreateCommandPool(uint32_t graphicsFamilyIndex, uint32_t transferFamilyIndex);
-    void vulkanCreateCommandBuffer();
+    void createCommandPool(uint32_t graphicsFamilyIndex, uint32_t transferFamilyIndex);
+    void createCommandBuffer();
     
-    void vulkanRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void updateUniformBuffer(uint32_t frameIndex);
 
     // memory
     bool createVertexBuffer(std::vector<Vertex> vertices);
     bool createIndexBuffer(std::vector<uint32_t> indices);
+    bool createUniformBuffers();
 
     // syncing
-    void vulkanCreateSyncObjects();
+    void createSyncObjects();
 };
