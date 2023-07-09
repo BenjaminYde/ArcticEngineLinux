@@ -22,6 +22,8 @@ public:
   uint32_t GetTransferFamilyIndex();
   const VkRenderPass& GetRenderPass();
   const VkPipeline& GetPipeline();
+  const VkPipelineLayout& GetPipelineLayout();
+  const VkDescriptorSetLayout& GetDescriptorSetLayout();
   const VkFramebuffer& GetFrameBuffer(uint32_t index);
 
 private:

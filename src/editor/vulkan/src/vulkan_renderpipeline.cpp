@@ -65,11 +65,20 @@ const VkPipeline &VulkanRenderPipeline::GetPipeline()
     return this->vkPipeline;
 }
 
+const VkPipelineLayout &VulkanRenderPipeline::GetPipelineLayout()
+{
+    return this->vkPipelineLayout;
+}
+
+const VkDescriptorSetLayout& VulkanRenderPipeline::GetDescriptorSetLayout()
+{
+    return this->vkDescriptorSetLayout;
+}
+
 const VkFramebuffer & VulkanRenderPipeline::GetFrameBuffer(uint32_t index)
 {
     return this->swapChainFramebuffers[index];
 }
-
 
 /// <summary>
 /// Specify the render pass and subpass index that the pipeline is compatible with, 
@@ -259,7 +268,7 @@ void VulkanRenderPipeline::createPipeline()
     rasterizer.lineWidth = 1.0f;
 
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
     rasterizer.depthBiasEnable = VK_FALSE;
     rasterizer.depthBiasConstantFactor = 0.0f; // optional
@@ -407,19 +416,18 @@ void VulkanRenderPipeline::createFramebuffers()
 void VulkanRenderPipeline::createDescriptorSetLayout()
 {
     // create descriptor set layout binding: uniform buffer
-    VkDescriptorSetLayoutBinding uboLayoutBinding{};
-    uboLayoutBinding.binding = 0; // binding index in the shader
-    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    uboLayoutBinding.descriptorCount = 1;
-
-    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT; // we're only referencing the descriptor from the vertex shader
-    uboLayoutBinding.pImmutableSamplers = nullptr; // optional, only relevant for image sampling related descriptors
+    VkDescriptorSetLayoutBinding dslBinding{};
+    dslBinding.binding = 0; // binding index in the shader
+    dslBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    dslBinding.descriptorCount = 1;
+    dslBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT; // we're only referencing the descriptor from the vertex shader
+    dslBinding.pImmutableSamplers = nullptr; // optional, only relevant for image sampling related descriptors
 
     // create descriptor set layout
     VkDescriptorSetLayoutCreateInfo dslInfo{};
     dslInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     dslInfo.bindingCount = 1;
-    dslInfo.pBindings = &uboLayoutBinding;
+    dslInfo.pBindings = &dslBinding;
 
     VkResult result = vkCreateDescriptorSetLayout(this->vkDevice, &dslInfo, nullptr, &this->vkDescriptorSetLayout);
     if(result != VK_SUCCESS)

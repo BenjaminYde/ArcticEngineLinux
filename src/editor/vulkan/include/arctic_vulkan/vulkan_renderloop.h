@@ -63,6 +63,9 @@ private:
     std::vector<VkDeviceMemory> uniformBuffersMemory;
     std::vector<void*> uniformBuffersMapped;
 
+    VkDescriptorPool vkDescriptorPool;
+    std::vector<VkDescriptorSet> vkDescriptorSets;
+
     // commands
     void createCommandPool(uint32_t graphicsFamilyIndex, uint32_t transferFamilyIndex);
     void createCommandBuffer();
@@ -73,7 +76,10 @@ private:
     // memory
     bool createVertexBuffer(std::vector<Vertex> vertices);
     bool createIndexBuffer(std::vector<uint32_t> indices);
+
     bool createUniformBuffers();
+    bool createDescriptorPool();
+    bool createDescriptorSets();
 
     // syncing
     void createSyncObjects();

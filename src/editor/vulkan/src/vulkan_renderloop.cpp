@@ -61,6 +61,12 @@ VulkanRenderLoop::VulkanRenderLoop(
         std::cout << "error: vulkan: failed to create index buffer!";
         return;
     }
+
+
+    // create uniform buffer
+    createUniformBuffers();
+    createDescriptorPool();
+    createDescriptorSets();
 }
 
 void VulkanRenderLoop::CleanUp()
@@ -86,6 +92,8 @@ void VulkanRenderLoop::CleanUp()
         vkDestroyBuffer(vkDevice, uniformBuffers[i], nullptr);
         vkFreeMemory(vkDevice, uniformBuffersMemory[i], nullptr);
     }
+
+    vkDestroyDescriptorPool(vkDevice, vkDescriptorPool, nullptr);
 }
 
 bool VulkanRenderLoop::IsSwapChainDirty() const
@@ -124,9 +132,6 @@ void VulkanRenderLoop::Render()
     // only reset the fence if we are submitting work
     vkResetFences(vkDevice, 1, &isDoneRenderingFence);
     
-    // update uniform buffers
-
-
     // record command buffer
     vkResetCommandBuffer(vkCommandBuffer, 0);
     recordCommandBuffer(vkCommandBuffer, availableImageIndex);
@@ -373,6 +378,71 @@ bool VulkanRenderLoop::createUniformBuffers()
     return true;
 }
 
+bool VulkanRenderLoop::createDescriptorPool()
+{
+    VkDescriptorPoolSize poolSize{};
+    poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+    VkDescriptorPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.poolSizeCount = 1;
+    poolInfo.pPoolSizes = &poolSize;
+    poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+    VkResult result = vkCreateDescriptorPool(this->vkDevice, &poolInfo, nullptr, &this->vkDescriptorPool);
+    if (result != VK_SUCCESS)
+    {
+        std::cout << "error: vulkan: failed to create descriptor pool!";
+        return false;
+    }
+
+    return true;
+}
+
+bool VulkanRenderLoop::createDescriptorSets()
+{
+    // create
+    auto descriptorSetLayout = this->pRenderPipeline->GetDescriptorSetLayout();
+    std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = this->vkDescriptorPool;
+    allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+    allocInfo.pSetLayouts = layouts.data();
+
+    this->vkDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+    VkResult result = vkAllocateDescriptorSets(this->vkDevice, &allocInfo, this->vkDescriptorSets.data());
+    if (result != VK_SUCCESS)
+    {
+        std::cout << "error: vulkan: failed to create descriptor sets!";
+        return false;
+    }
+
+    // allocate 
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) 
+    {
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = uniformBuffers[i];
+        bufferInfo.offset = 0;
+        bufferInfo.range = sizeof(UniformBufferObject);
+
+        VkWriteDescriptorSet descriptorWrite{};
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = this->vkDescriptorSets[i];
+        descriptorWrite.dstBinding = 0;
+        descriptorWrite.dstArrayElement = 0;
+        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.pBufferInfo = &bufferInfo;
+        descriptorWrite.pImageInfo = nullptr; // Optional
+        descriptorWrite.pTexelBufferView = nullptr; // Optional
+
+        vkUpdateDescriptorSets(this->vkDevice, 1, &descriptorWrite, 0, nullptr);
+    }
+    return true;
+}
+
 void VulkanRenderLoop::updateUniformBuffer(uint32_t frameIndex)
 {
     static auto startTime = std::chrono::high_resolution_clock::now();
@@ -454,6 +524,12 @@ void VulkanRenderLoop::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32
 
     // command buffer: bind index buffer
     vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+    // command buffer: bind descriptor sets
+    // TODO: implement multiple MAX_FRAMES_IN_FLIGHT
+    updateUniformBuffer(0);
+    auto pipelineLayout = pRenderPipeline->GetPipelineLayout();
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &this->vkDescriptorSets[0], 0, nullptr);
 
     // command buffer: draw
     uint32_t vertexCount = 3;
