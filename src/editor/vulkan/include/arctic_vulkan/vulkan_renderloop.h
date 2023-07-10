@@ -35,7 +35,7 @@ private:
     // commands
     VkCommandPool vkCommandPoolGraphics;
     VkCommandPool vkCommandPoolTransfer;
-    std::vector<VkCommandBuffer> vkCommandBuffers;
+    //std::vector<VkCommandBuffer> vkCommandBuffers;
 
     VkQueue vkGraphicsQueue;
     VkQueue vkTransferQueue;
@@ -44,11 +44,28 @@ private:
     // syncing
     const int MAX_FRAMES_IN_FLIGHT = 3;
 
-    std::vector<VkSemaphore> imageAvailableSemaphore;
-    std::vector<VkSemaphore> renderFinishedSemaphore;
-    std::vector<VkFence> isDoneRenderingFence;
-
     uint16_t currentFrameIndex = 0;
+
+    struct Frame
+    {   
+        // commands
+        VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
+
+        // syncing
+        VkSemaphore imageAvailableSemaphore = VK_NULL_HANDLE;
+        VkSemaphore renderFinishedSemaphore = VK_NULL_HANDLE;
+        VkFence isDoneRenderingFence = VK_NULL_HANDLE;
+
+        // memory
+        VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+
+        VkBuffer uniformBuffer = VK_NULL_HANDLE;
+        VkDeviceMemory uniformBufferMemory = VK_NULL_HANDLE;
+        void* uniformBufferMapped = nullptr;
+    };
+
+    std::vector<Frame*> frames;
+
     bool isSwapChainDirty;
 
     // memory
@@ -60,19 +77,14 @@ private:
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
 
-    std::vector<VkBuffer> uniformBuffers;
-    std::vector<VkDeviceMemory> uniformBuffersMemory;
-    std::vector<void*> uniformBuffersMapped;
-
     VkDescriptorPool vkDescriptorPool;
-    std::vector<VkDescriptorSet> vkDescriptorSets;
 
     // commands
     void createCommandPool(uint32_t graphicsFamilyIndex, uint32_t transferFamilyIndex);
     void createCommandBuffers();
     
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t frameIndex);
-    void updateUniformBuffer(uint32_t frameIndex);
+    void recordCommandBuffer(const Frame& frame, uint32_t imageIndex);
+    void updateUniformBuffer(const Frame& frame);
 
     // memory
     bool createVertexBuffer(std::vector<Vertex> vertices);

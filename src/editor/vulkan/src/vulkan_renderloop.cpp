@@ -31,6 +31,11 @@ VulkanRenderLoop::VulkanRenderLoop(
     vkTransferQueue(transferQueue),
     vkPresentQueue(presentQueue)
 {
+    // define frames to use
+    frames.resize(MAX_FRAMES_IN_FLIGHT);
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) 
+        this->frames[i] = new Frame();
+        
     // create command pool and buffer
     createCommandPool(renderPipeline->GetGraphicsFamilyIndex(), renderPipeline->GetTransferFamilyIndex());
     createCommandBuffers();
@@ -62,8 +67,6 @@ VulkanRenderLoop::VulkanRenderLoop(
         return;
     }
 
-
-    // create uniform buffer
     createUniformBuffers();
     createDescriptorPool();
     createDescriptorSets();
@@ -77,9 +80,11 @@ void VulkanRenderLoop::CleanUp()
     // syncing
     for(int i=0; i<MAX_FRAMES_IN_FLIGHT; ++i)
     {
-        vkDestroySemaphore(vkDevice, imageAvailableSemaphore[i], nullptr);
-        vkDestroySemaphore(vkDevice, renderFinishedSemaphore[i], nullptr);
-        vkDestroyFence(vkDevice, isDoneRenderingFence[i], nullptr);
+        Frame* frame = this->frames[i];
+
+        vkDestroySemaphore(vkDevice, frame->imageAvailableSemaphore, nullptr);
+        vkDestroySemaphore(vkDevice, frame->renderFinishedSemaphore, nullptr);
+        vkDestroyFence(vkDevice, frame->isDoneRenderingFence, nullptr);
     }
 
     // command pool & buffer
@@ -94,9 +99,11 @@ void VulkanRenderLoop::CleanUp()
     vkFreeMemory(vkDevice, indexBufferMemory, nullptr);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) 
-    {
-        vkDestroyBuffer(vkDevice, uniformBuffers[i], nullptr);
-        vkFreeMemory(vkDevice, uniformBuffersMemory[i], nullptr);
+    {   
+        Frame* frame = this->frames[i];
+
+        vkDestroyBuffer(vkDevice, frame->uniformBuffer, nullptr);
+        vkFreeMemory(vkDevice, frame->uniformBufferMemory, nullptr);
     }
 
     vkDestroyDescriptorPool(vkDevice, vkDescriptorPool, nullptr);
@@ -112,13 +119,14 @@ void VulkanRenderLoop::Render()
     // wait until previous frame is finished
     //// todo: implement multiple frames in flight. this avoids idle time (cpu waiting for gpu & vice versa)
     //// https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Frames_in_flight
-    vkWaitForFences(vkDevice, 1, &isDoneRenderingFence[currentFrameIndex], VK_TRUE, UINT64_MAX);
+    Frame* frame = this->frames[currentFrameIndex];
+    vkWaitForFences(vkDevice, 1, &frame->isDoneRenderingFence, VK_TRUE, UINT64_MAX);
 
     // acquire next image from swap chain
 
     // try acquire next image
     uint32_t availableImageIndex = 0;
-    VkResult resultAcquireNextImage = vkAcquireNextImageKHR(vkDevice, pSwapchain->GetSwapChain(), UINT64_MAX, imageAvailableSemaphore[currentFrameIndex], VK_NULL_HANDLE, &availableImageIndex);
+    VkResult resultAcquireNextImage = vkAcquireNextImageKHR(vkDevice, pSwapchain->GetSwapChain(), UINT64_MAX, frame->imageAvailableSemaphore, VK_NULL_HANDLE, &availableImageIndex);
 
     // check if swapchain still up-to-date
     // >> recreate when not (due to window resizing, ...)
@@ -138,18 +146,18 @@ void VulkanRenderLoop::Render()
 
     // reset fence state to zero
     // only reset the fence if we are submitting work
-    vkResetFences(vkDevice, 1, &isDoneRenderingFence[currentFrameIndex]);
+    vkResetFences(vkDevice, 1, &frame->isDoneRenderingFence);
     
     // record command buffer
-    vkResetCommandBuffer(vkCommandBuffers[currentFrameIndex], 0);
-    recordCommandBuffer(vkCommandBuffers[currentFrameIndex], availableImageIndex, currentFrameIndex);
+    vkResetCommandBuffer(frame->commandBuffer, 0);
+    recordCommandBuffer(*frame, availableImageIndex);
 
     // create info: command buffer submit 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
     //> specify semaphores to wait on before execution
-    VkSemaphore waitSemaphores[] = { imageAvailableSemaphore[currentFrameIndex]};
+    VkSemaphore waitSemaphores[] = { frame->imageAvailableSemaphore};
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
@@ -157,15 +165,15 @@ void VulkanRenderLoop::Render()
 
     //> specify command buffer
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &vkCommandBuffers[currentFrameIndex];
+    submitInfo.pCommandBuffers = &frame->commandBuffer;
 
     //> signal semaphores on finish execution
-    VkSemaphore signalSemaphores[] = { renderFinishedSemaphore[currentFrameIndex] };
+    VkSemaphore signalSemaphores[] = { frame->renderFinishedSemaphore };
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
     // submit command buffer to graphics queue
-    VkResult resultQueueSubmit = vkQueueSubmit(vkGraphicsQueue, 1, &submitInfo, isDoneRenderingFence[currentFrameIndex]);
+    VkResult resultQueueSubmit = vkQueueSubmit(vkGraphicsQueue, 1, &submitInfo, frame->isDoneRenderingFence);
     if(resultQueueSubmit != VK_SUCCESS)
     {
         std::cout << "error: vulkan: failed to submit command buffer to graphics queue!";
@@ -225,20 +233,27 @@ void VulkanRenderLoop::createCommandPool(uint32_t graphicsFamilyIndex, uint32_t 
 
 void VulkanRenderLoop::createCommandBuffers()
 {
-    // create info: command buffer allocation
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = vkCommandPoolGraphics;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY; // can be submitted to a queue for execution, but cannot be called from other command buffers
-    allocInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
+    // create all buffers
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) 
+    {   
+        // get frame
+        Frame* frame = this->frames[i];
 
-    // create command buffers
-    this->vkCommandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-    VkResult result = vkAllocateCommandBuffers(vkDevice, &allocInfo, this->vkCommandBuffers.data());
-    if (result != VK_SUCCESS)
-    {
-        std::cout << "error: vulkan: failed to create command buffer!";
-        return;
+        // create info: command buffer allocation
+        VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = vkCommandPoolGraphics;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY; // can be submitted to a queue for execution, but cannot be called from other command buffers
+        allocInfo.commandBufferCount = 1;
+
+        // create command buffers
+        //this->vkCommandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+        VkResult result = vkAllocateCommandBuffers(vkDevice, &allocInfo, &frame->commandBuffer);
+        if (result != VK_SUCCESS)
+        {
+            std::cout << "error: vulkan: failed to create command buffer!";
+            return;
+        }
     }
 }
 
@@ -374,29 +389,32 @@ bool VulkanRenderLoop::createIndexBuffer(std::vector<uint32_t> indices)
 bool VulkanRenderLoop::createUniformBuffers()
 {   
     // resize buffers
-    uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-    uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
-    uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
+    //uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+    //uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+    //uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
     // create all buffers
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) 
     {   
-        // define buffer
+        // get frame
+        Frame* frame = this->frames[i];
+
+        // define buffer    
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
         VkBufferUsageFlags usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
         VkMemoryPropertyFlags memoryFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
         
         // create buffer
-        if(!vkMemoryHandler->CreateBuffer(bufferSize, usage, memoryFlags, this->uniformBuffers[i], this->uniformBuffersMemory[i]))
+        if(!vkMemoryHandler->CreateBuffer(bufferSize, usage, memoryFlags, frame->uniformBuffer, frame->uniformBufferMemory))
             return false;
 
         // map memory to buffer
-        vkMapMemory(this->vkDevice, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
+        vkMapMemory(this->vkDevice, frame->uniformBufferMemory, 0, bufferSize, 0, &frame->uniformBufferMapped);
     }
     return true;
 }
 
-void VulkanRenderLoop::updateUniformBuffer(uint32_t frameIndex)
+void VulkanRenderLoop::updateUniformBuffer(const Frame& frame)
 {
     static auto startTime = std::chrono::high_resolution_clock::now();
 
@@ -415,7 +433,7 @@ void VulkanRenderLoop::updateUniformBuffer(uint32_t frameIndex)
 
     ubo.proj[1][1] *= -1;
 
-    memcpy(uniformBuffersMapped[frameIndex], &ubo, sizeof(ubo));
+    memcpy(frame.uniformBufferMapped, &ubo, sizeof(ubo));
 }
 
 bool VulkanRenderLoop::createDescriptorPool()
@@ -442,34 +460,36 @@ bool VulkanRenderLoop::createDescriptorPool()
 
 bool VulkanRenderLoop::createDescriptorSets()
 {
-    // create
-    auto descriptorSetLayout = this->pRenderPipeline->GetDescriptorSetLayout();
-    std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
-    VkDescriptorSetAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = this->vkDescriptorPool;
-    allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-    allocInfo.pSetLayouts = layouts.data();
-
-    this->vkDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-    VkResult result = vkAllocateDescriptorSets(this->vkDevice, &allocInfo, this->vkDescriptorSets.data());
-    if (result != VK_SUCCESS)
-    {
-        std::cout << "error: vulkan: failed to create descriptor sets!";
-        return false;
-    }
-
     // allocate 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) 
     {
+        // get frame
+        Frame* frame = this->frames[i];
+
+        // create
+        auto descriptorSetLayout = this->pRenderPipeline->GetDescriptorSetLayout();
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = this->vkDescriptorPool;
+        allocInfo.descriptorSetCount = 1;
+        allocInfo.pSetLayouts = &descriptorSetLayout;
+
+        //this->vkDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+        VkResult result = vkAllocateDescriptorSets(this->vkDevice, &allocInfo, &frame->descriptorSet);
+        if (result != VK_SUCCESS)
+        {
+            std::cout << "error: vulkan: failed to create descriptor sets!";
+            return false;
+        }
+
         VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = uniformBuffers[i];
+        bufferInfo.buffer = frame->uniformBuffer;
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(UniformBufferObject);
 
         VkWriteDescriptorSet descriptorWrite{};
         descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrite.dstSet = this->vkDescriptorSets[i];
+        descriptorWrite.dstSet = frame->descriptorSet;
         descriptorWrite.dstBinding = 0;
         descriptorWrite.dstArrayElement = 0;
         descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -483,8 +503,11 @@ bool VulkanRenderLoop::createDescriptorSets()
     return true;
 }
 
-void VulkanRenderLoop::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t frameIndex)
+void VulkanRenderLoop::recordCommandBuffer(const Frame& frame, uint32_t imageIndex)
 {
+    // get command buffer
+    VkCommandBuffer commandBuffer = frame.commandBuffer;
+
     // command buffer: begin
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -544,9 +567,9 @@ void VulkanRenderLoop::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32
     vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
     // command buffer: bind descriptor sets
-    updateUniformBuffer(frameIndex);
+    updateUniformBuffer(frame);
     auto pipelineLayout = pRenderPipeline->GetPipelineLayout();
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &this->vkDescriptorSets[frameIndex], 0, nullptr);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &frame.descriptorSet, 0, nullptr);
 
     // command buffer: draw
     uint32_t vertexCount = 3;
@@ -578,16 +601,19 @@ void VulkanRenderLoop::createSyncObjects()
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // is signaled on start
 
     // resize memory
-    imageAvailableSemaphore.resize(MAX_FRAMES_IN_FLIGHT);
-    renderFinishedSemaphore.resize(MAX_FRAMES_IN_FLIGHT);
-    isDoneRenderingFence.resize(MAX_FRAMES_IN_FLIGHT);
+    //imageAvailableSemaphore.resize(MAX_FRAMES_IN_FLIGHT);
+    //renderFinishedSemaphore.resize(MAX_FRAMES_IN_FLIGHT);
+    //isDoneRenderingFence.resize(MAX_FRAMES_IN_FLIGHT);
 
     for(int i=0; i<MAX_FRAMES_IN_FLIGHT; ++i)
     {
+        // get frame
+        Frame* frame = this->frames[i];
+
         // create objects
-        if (vkCreateSemaphore(vkDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphore[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(vkDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphore[i]) != VK_SUCCESS ||
-            vkCreateFence(vkDevice, &fenceInfo, nullptr, &isDoneRenderingFence[i]) != VK_SUCCESS)
+        if (vkCreateSemaphore(vkDevice, &semaphoreInfo, nullptr, &frame->imageAvailableSemaphore) != VK_SUCCESS ||
+            vkCreateSemaphore(vkDevice, &semaphoreInfo, nullptr, &frame->renderFinishedSemaphore) != VK_SUCCESS ||
+            vkCreateFence(vkDevice, &fenceInfo, nullptr, &frame->isDoneRenderingFence) != VK_SUCCESS)
         {
             std::cout << "error: vulkan: failed to create sync objects!";
             return;
