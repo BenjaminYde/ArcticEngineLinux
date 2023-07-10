@@ -39,6 +39,7 @@ void VulkanRenderPipeline::CleanUp()
     }
 
     // pipeline
+    vkDestroyDescriptorSetLayout(vkDevice, vkDescriptorSetLayout, nullptr);
     vkDestroyPipeline(vkDevice, vkPipeline, nullptr);
     vkDestroyPipelineLayout(vkDevice, vkPipelineLayout, nullptr);
     vkDestroyRenderPass(vkDevice, vkRenderPass, nullptr);
@@ -64,11 +65,20 @@ const VkPipeline &VulkanRenderPipeline::GetPipeline()
     return this->vkPipeline;
 }
 
+const VkPipelineLayout &VulkanRenderPipeline::GetPipelineLayout()
+{
+    return this->vkPipelineLayout;
+}
+
+const VkDescriptorSetLayout& VulkanRenderPipeline::GetDescriptorSetLayout()
+{
+    return this->vkDescriptorSetLayout;
+}
+
 const VkFramebuffer & VulkanRenderPipeline::GetFrameBuffer(uint32_t index)
 {
     return this->swapChainFramebuffers[index];
 }
-
 
 /// <summary>
 /// Specify the render pass and subpass index that the pipeline is compatible with, 
@@ -258,7 +268,7 @@ void VulkanRenderPipeline::createPipeline()
     rasterizer.lineWidth = 1.0f;
 
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
     rasterizer.depthBiasEnable = VK_FALSE;
     rasterizer.depthBiasConstantFactor = 0.0f; // optional
@@ -314,11 +324,14 @@ void VulkanRenderPipeline::createPipeline()
     colorBlending.blendConstants[2] = 0.0f; // optional
     colorBlending.blendConstants[3] = 0.0f; // optional
 
+    // create descriptor set layout
+    createDescriptorSetLayout();
+
     // create info: pipeline layout
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0; // optional
-    pipelineLayoutInfo.pSetLayouts = nullptr; // optional
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &this->vkDescriptorSetLayout;
     pipelineLayoutInfo.pushConstantRangeCount = 0; // optional
     pipelineLayoutInfo.pPushConstantRanges = nullptr; // optional
 
@@ -397,6 +410,30 @@ void VulkanRenderPipeline::createFramebuffers()
             std::cout <<"error: vulkan: failed to create framebuffer!";
             return;
         }
+    }
+}
+
+void VulkanRenderPipeline::createDescriptorSetLayout()
+{
+    // create descriptor set layout binding: uniform buffer
+    VkDescriptorSetLayoutBinding dslBinding{};
+    dslBinding.binding = 0; // binding index in the shader
+    dslBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    dslBinding.descriptorCount = 1;
+    dslBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT; // we're only referencing the descriptor from the vertex shader
+    dslBinding.pImmutableSamplers = nullptr; // optional, only relevant for image sampling related descriptors
+
+    // create descriptor set layout
+    VkDescriptorSetLayoutCreateInfo dslInfo{};
+    dslInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    dslInfo.bindingCount = 1;
+    dslInfo.pBindings = &dslBinding;
+
+    VkResult result = vkCreateDescriptorSetLayout(this->vkDevice, &dslInfo, nullptr, &this->vkDescriptorSetLayout);
+    if(result != VK_SUCCESS)
+    {
+        std::cout <<"error: vulkan: failed to create descriptor set layout!";
+        return;
     }
 }
 

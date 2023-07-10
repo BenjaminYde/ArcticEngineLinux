@@ -22,6 +22,7 @@ set_target_properties(
 target_sources(
     ${TARGET}
     PRIVATE
+        ${SRC_DIR}/uniform_buffer_object.cpp
         ${SRC_DIR}/vertex.cpp
     )
 

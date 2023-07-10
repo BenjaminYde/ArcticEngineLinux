@@ -91,6 +91,7 @@ void VulkanSwapChain::createSwapChain(
 
     uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1; // make sure to have al least 2 images
     imageCount = std::clamp(imageCount, static_cast<uint32_t>(1), swapChainSupport.capabilities.maxImageCount);
+    imageCount = 3; // set to triple buffering
 
     // create swap chain info
     // .. default data
