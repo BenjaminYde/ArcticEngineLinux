@@ -33,7 +33,7 @@ VulkanRenderLoop::VulkanRenderLoop(
 {
     // create command pool and buffer
     createCommandPool(renderPipeline->GetGraphicsFamilyIndex(), renderPipeline->GetTransferFamilyIndex());
-    createCommandBuffer();
+    createCommandBuffers();
 
     // syncing
     createSyncObjects();
@@ -75,17 +75,23 @@ void VulkanRenderLoop::CleanUp()
     vkDeviceWaitIdle(vkDevice);
 
     // syncing
-    vkDestroySemaphore(vkDevice, imageAvailableSemaphore, nullptr);
-    vkDestroySemaphore(vkDevice, renderFinishedSemaphore, nullptr);
-    vkDestroyFence(vkDevice, isDoneRenderingFence, nullptr);
+    for(int i=0; i<MAX_FRAMES_IN_FLIGHT; ++i)
+    {
+        vkDestroySemaphore(vkDevice, imageAvailableSemaphore[i], nullptr);
+        vkDestroySemaphore(vkDevice, renderFinishedSemaphore[i], nullptr);
+        vkDestroyFence(vkDevice, isDoneRenderingFence[i], nullptr);
+    }
 
     // command pool & buffer
     vkDestroyCommandPool(vkDevice, vkCommandPoolGraphics, nullptr);
     vkDestroyCommandPool(vkDevice, vkCommandPoolTransfer, nullptr);
-
+    
     // buffers
     vkDestroyBuffer(vkDevice, vertexBuffer, nullptr);
     vkFreeMemory(vkDevice, vertexBufferMemory, nullptr);
+
+    vkDestroyBuffer(vkDevice, indexBuffer, nullptr);
+    vkFreeMemory(vkDevice, indexBufferMemory, nullptr);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) 
     {
@@ -106,11 +112,13 @@ void VulkanRenderLoop::Render()
     // wait until previous frame is finished
     //// todo: implement multiple frames in flight. this avoids idle time (cpu waiting for gpu & vice versa)
     //// https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Frames_in_flight
-    vkWaitForFences(vkDevice, 1, &isDoneRenderingFence, VK_TRUE, UINT64_MAX);
+    vkWaitForFences(vkDevice, 1, &isDoneRenderingFence[currentFrameIndex], VK_TRUE, UINT64_MAX);
 
     // acquire next image from swap chain
-    uint32_t availableImageIndex;
-    VkResult resultAcquireNextImage = vkAcquireNextImageKHR(vkDevice, pSwapchain->GetSwapChain(), UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &availableImageIndex);
+
+    // try acquire next image
+    uint32_t availableImageIndex = 0;
+    VkResult resultAcquireNextImage = vkAcquireNextImageKHR(vkDevice, pSwapchain->GetSwapChain(), UINT64_MAX, imageAvailableSemaphore[currentFrameIndex], VK_NULL_HANDLE, &availableImageIndex);
 
     // check if swapchain still up-to-date
     // >> recreate when not (due to window resizing, ...)
@@ -118,7 +126,7 @@ void VulkanRenderLoop::Render()
     {   
         // wait until idle
         vkDeviceWaitIdle(vkDevice);
-        
+
         // mark dirty
         this->isSwapChainDirty = true;
         return;
@@ -126,22 +134,22 @@ void VulkanRenderLoop::Render()
     else
     {
         this->isSwapChainDirty = false;
-    }
+    }   
 
     // reset fence state to zero
     // only reset the fence if we are submitting work
-    vkResetFences(vkDevice, 1, &isDoneRenderingFence);
+    vkResetFences(vkDevice, 1, &isDoneRenderingFence[currentFrameIndex]);
     
     // record command buffer
-    vkResetCommandBuffer(vkCommandBuffer, 0);
-    recordCommandBuffer(vkCommandBuffer, availableImageIndex);
+    vkResetCommandBuffer(vkCommandBuffers[currentFrameIndex], 0);
+    recordCommandBuffer(vkCommandBuffers[currentFrameIndex], availableImageIndex, currentFrameIndex);
 
     // create info: command buffer submit 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
     //> specify semaphores to wait on before execution
-    VkSemaphore waitSemaphores[] = { imageAvailableSemaphore };
+    VkSemaphore waitSemaphores[] = { imageAvailableSemaphore[currentFrameIndex]};
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
@@ -149,15 +157,15 @@ void VulkanRenderLoop::Render()
 
     //> specify command buffer
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &vkCommandBuffer;
+    submitInfo.pCommandBuffers = &vkCommandBuffers[currentFrameIndex];
 
     //> signal semaphores on finish execution
-    VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
+    VkSemaphore signalSemaphores[] = { renderFinishedSemaphore[currentFrameIndex] };
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
     // submit command buffer to graphics queue
-    VkResult resultQueueSubmit = vkQueueSubmit(vkGraphicsQueue, 1, &submitInfo, isDoneRenderingFence);
+    VkResult resultQueueSubmit = vkQueueSubmit(vkGraphicsQueue, 1, &submitInfo, isDoneRenderingFence[currentFrameIndex]);
     if(resultQueueSubmit != VK_SUCCESS)
     {
         std::cout << "error: vulkan: failed to submit command buffer to graphics queue!";
@@ -179,6 +187,9 @@ void VulkanRenderLoop::Render()
 
     // queue present khr
     vkQueuePresentKHR(vkPresentQueue, &presentInfo);
+
+    // increase current image frame
+    currentFrameIndex = (currentFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 void VulkanRenderLoop::createCommandPool(uint32_t graphicsFamilyIndex, uint32_t transferFamilyIndex)
@@ -212,17 +223,18 @@ void VulkanRenderLoop::createCommandPool(uint32_t graphicsFamilyIndex, uint32_t 
     }
 }
 
-void VulkanRenderLoop::createCommandBuffer()
+void VulkanRenderLoop::createCommandBuffers()
 {
     // create info: command buffer allocation
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = vkCommandPoolGraphics;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY; // can be submitted to a queue for execution, but cannot be called from other command buffers
-    allocInfo.commandBufferCount = 1;
+    allocInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
 
-    // create command buffer
-    VkResult result = vkAllocateCommandBuffers(vkDevice, &allocInfo, &vkCommandBuffer);
+    // create command buffers
+    this->vkCommandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+    VkResult result = vkAllocateCommandBuffers(vkDevice, &allocInfo, this->vkCommandBuffers.data());
     if (result != VK_SUCCESS)
     {
         std::cout << "error: vulkan: failed to create command buffer!";
@@ -235,7 +247,7 @@ bool VulkanRenderLoop::createVertexBuffer(std::vector<Vertex> vertices)
     bool useStagingBuffer = true;
     if(useStagingBuffer)
     {
-        VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+        VkDeviceSize bufferSize = sizeof(Vertex) * vertices.size();
 
         VkBuffer vertexBufferStaging;
         VkDeviceMemory vertexBufferMemoryStaging;
@@ -276,7 +288,7 @@ bool VulkanRenderLoop::createVertexBuffer(std::vector<Vertex> vertices)
     }
     else
     {
-        VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+        VkDeviceSize bufferSize = sizeof(Vertex) * vertices.size();
         VkBufferUsageFlags usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
         VkMemoryPropertyFlags memoryPropeties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
@@ -297,7 +309,7 @@ bool VulkanRenderLoop::createIndexBuffer(std::vector<uint32_t> indices)
     bool useStagingBuffer = true;
     if(useStagingBuffer)
     {
-        VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+        VkDeviceSize bufferSize = sizeof(Vertex) * indices.size();
 
         VkBuffer indexBufferStaging;
         VkDeviceMemory indexBufferMemoryStaging;
@@ -338,7 +350,7 @@ bool VulkanRenderLoop::createIndexBuffer(std::vector<uint32_t> indices)
     }
     else
     {
-        VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+        VkDeviceSize bufferSize = sizeof(Vertex) * indices.size();
         VkBufferUsageFlags usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
         VkMemoryPropertyFlags memoryPropeties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
@@ -353,6 +365,12 @@ bool VulkanRenderLoop::createIndexBuffer(std::vector<uint32_t> indices)
     return true;
 }
 
+/// @brief Create multiple uniform buffers.     
+/// @brief We're going to copy new data to the uniform buffer every frame, it doesn't really make any sense to have a staging buffer.       
+/// @brief We should have multiple buffers, because multiple frames may be in flight at the same time and we don't want to update       
+/// @brief the buffer in preparation of the next frame while a previous one is still reading from it. Thus, we need to have as many         
+/// @brief uniform buffers as we have frames in flight, and write to a uniform buffer that is not currently being read by the GPU
+/// @return true when creation was successful 
 bool VulkanRenderLoop::createUniformBuffers()
 {   
     // resize buffers
@@ -376,6 +394,28 @@ bool VulkanRenderLoop::createUniformBuffers()
         vkMapMemory(this->vkDevice, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
     }
     return true;
+}
+
+void VulkanRenderLoop::updateUniformBuffer(uint32_t frameIndex)
+{
+    static auto startTime = std::chrono::high_resolution_clock::now();
+
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+    UniformBufferObject ubo{};
+    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+    auto swapchainData = pSwapchain->GetData();
+    auto swapchainExtent = swapchainData.extent;
+
+    ubo.proj = glm::perspective(glm::radians(45.0f), swapchainExtent.width / (float) swapchainExtent.height, 0.1f, 10.0f);
+
+    ubo.proj[1][1] *= -1;
+
+    memcpy(uniformBuffersMapped[frameIndex], &ubo, sizeof(ubo));
 }
 
 bool VulkanRenderLoop::createDescriptorPool()
@@ -443,29 +483,7 @@ bool VulkanRenderLoop::createDescriptorSets()
     return true;
 }
 
-void VulkanRenderLoop::updateUniformBuffer(uint32_t frameIndex)
-{
-    static auto startTime = std::chrono::high_resolution_clock::now();
-
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-    UniformBufferObject ubo{};
-    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-
-    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-
-    auto swapchainData = pSwapchain->GetData();
-    auto swapchainExtent = swapchainData.extent;
-
-    ubo.proj = glm::perspective(glm::radians(45.0f), swapchainExtent.width / (float) swapchainExtent.height, 0.1f, 10.0f);
-
-    ubo.proj[1][1] *= -1;
-
-    memcpy(uniformBuffersMapped[frameIndex], &ubo, sizeof(ubo));
-}
-
-void VulkanRenderLoop::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void VulkanRenderLoop::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t frameIndex)
 {
     // command buffer: begin
     VkCommandBufferBeginInfo beginInfo{};
@@ -479,7 +497,7 @@ void VulkanRenderLoop::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32
         std::cout << "error: vulkan: failed to begin command buffer!";
         return;
     }
-
+ 
     // get swapchain data
     SwapChainData swapChainData = pSwapchain->GetData();
 
@@ -526,10 +544,9 @@ void VulkanRenderLoop::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32
     vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
     // command buffer: bind descriptor sets
-    // TODO: implement multiple MAX_FRAMES_IN_FLIGHT
-    updateUniformBuffer(0);
+    updateUniformBuffer(frameIndex);
     auto pipelineLayout = pRenderPipeline->GetPipelineLayout();
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &this->vkDescriptorSets[0], 0, nullptr);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &this->vkDescriptorSets[frameIndex], 0, nullptr);
 
     // command buffer: draw
     uint32_t vertexCount = 3;
@@ -551,7 +568,8 @@ void VulkanRenderLoop::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32
 }
 
 void VulkanRenderLoop::createSyncObjects()
-{
+{   
+    // create info
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -559,11 +577,20 @@ void VulkanRenderLoop::createSyncObjects()
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // is signaled on start
 
-    if (vkCreateSemaphore(vkDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
-        vkCreateSemaphore(vkDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS ||
-        vkCreateFence(vkDevice, &fenceInfo, nullptr, &isDoneRenderingFence) != VK_SUCCESS)
+    // resize memory
+    imageAvailableSemaphore.resize(MAX_FRAMES_IN_FLIGHT);
+    renderFinishedSemaphore.resize(MAX_FRAMES_IN_FLIGHT);
+    isDoneRenderingFence.resize(MAX_FRAMES_IN_FLIGHT);
+
+    for(int i=0; i<MAX_FRAMES_IN_FLIGHT; ++i)
     {
-        std::cout << "error: vulkan: failed to create sync objects!";
-        return;
+        // create objects
+        if (vkCreateSemaphore(vkDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphore[i]) != VK_SUCCESS ||
+            vkCreateSemaphore(vkDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphore[i]) != VK_SUCCESS ||
+            vkCreateFence(vkDevice, &fenceInfo, nullptr, &isDoneRenderingFence[i]) != VK_SUCCESS)
+        {
+            std::cout << "error: vulkan: failed to create sync objects!";
+            return;
+        }
     }
 }

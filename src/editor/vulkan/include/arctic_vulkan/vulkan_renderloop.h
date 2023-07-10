@@ -35,19 +35,20 @@ private:
     // commands
     VkCommandPool vkCommandPoolGraphics;
     VkCommandPool vkCommandPoolTransfer;
-    VkCommandBuffer vkCommandBuffer;
+    std::vector<VkCommandBuffer> vkCommandBuffers;
 
     VkQueue vkGraphicsQueue;
     VkQueue vkTransferQueue;
     VkQueue vkPresentQueue;
 
     // syncing
-    const int MAX_FRAMES_IN_FLIGHT = 1;
+    const int MAX_FRAMES_IN_FLIGHT = 3;
 
-    VkSemaphore imageAvailableSemaphore;
-    VkSemaphore renderFinishedSemaphore;
-    VkFence isDoneRenderingFence;
+    std::vector<VkSemaphore> imageAvailableSemaphore;
+    std::vector<VkSemaphore> renderFinishedSemaphore;
+    std::vector<VkFence> isDoneRenderingFence;
 
+    uint16_t currentFrameIndex = 0;
     bool isSwapChainDirty;
 
     // memory
@@ -68,9 +69,9 @@ private:
 
     // commands
     void createCommandPool(uint32_t graphicsFamilyIndex, uint32_t transferFamilyIndex);
-    void createCommandBuffer();
+    void createCommandBuffers();
     
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t frameIndex);
     void updateUniformBuffer(uint32_t frameIndex);
 
     // memory
