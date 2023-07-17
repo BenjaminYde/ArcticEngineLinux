@@ -3,10 +3,10 @@
 #include <iostream>
 
 void VulkanSwapChain::Configure(
-    const VkDevice& vkDevice, 
-    const VkPhysicalDevice& vkPhysicalDevice,
-    const VkSurfaceKHR& vkSurface,
-    VulkanWindow* window)
+    VkDevice vkDevice, 
+    VkPhysicalDevice vkPhysicalDevice,
+    VkSurfaceKHR vkSurface,
+    std::shared_ptr<VulkanWindow> window)
 {
     this->vkDevice = vkDevice;
     this->vkPhysicalDevice = vkPhysicalDevice;
@@ -16,7 +16,7 @@ void VulkanSwapChain::Configure(
 
 void VulkanSwapChain::CreateSwapChain()
 {
-    createSwapChain(vkDevice, vkPhysicalDevice, vkSurface, window);
+    createSwapChain(vkDevice, vkPhysicalDevice, vkSurface, *window.get());
     createImageViews(vkDevice);
 }
 
@@ -76,10 +76,10 @@ const std::vector<VkImageView> &VulkanSwapChain::GetImageViews()
 }
 
 void VulkanSwapChain::createSwapChain(
-    const VkDevice & vkDevice, 
-    const VkPhysicalDevice & vkPhysicalDevice, 
-    const VkSurfaceKHR & vkSurface,
-    VulkanWindow* window)
+    const VkDevice& vkDevice, 
+    const VkPhysicalDevice& vkPhysicalDevice, 
+    const VkSurfaceKHR& vkSurface,
+    const VulkanWindow& window)
 {
     // query device support
     SwapChainDeviceSupport swapChainSupport = QuerySwapChainSupport(vkPhysicalDevice, vkSurface);
@@ -206,10 +206,10 @@ VkPresentModeKHR VulkanSwapChain::selectSwapChainPresentMode(const std::vector<V
 }
 
 
-VkExtent2D VulkanSwapChain::selectSwapChainExtent(VulkanWindow* window, const VkSurfaceCapabilitiesKHR & capabilities)
+VkExtent2D VulkanSwapChain::selectSwapChainExtent(const VulkanWindow& window, const VkSurfaceCapabilitiesKHR & capabilities)
 {
     // get window size
-    auto framebufferSize = window->GetFramebufferSize();
+    auto framebufferSize = window.GetFramebufferSize();
 
     // create vulkan extent
     VkExtent2D extent = {};

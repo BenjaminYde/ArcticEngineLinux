@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <memory>
 #include <vulkan/vulkan_core.h>
 
 struct SwapChainDeviceSupport
@@ -24,10 +25,10 @@ class VulkanSwapChain
 public:
 
     void Configure(
-        const VkDevice& vkDevice, 
-        const VkPhysicalDevice& vkPhysicalDevice,
-        const VkSurfaceKHR& vkSurface,
-        VulkanWindow* window);
+        VkDevice vkDevice, 
+        VkPhysicalDevice vkPhysicalDevice,
+        VkSurfaceKHR vkSurface,
+        std::shared_ptr<VulkanWindow> window);
 
     void CreateSwapChain();
 
@@ -44,19 +45,19 @@ private:
     VkDevice vkDevice;
     VkPhysicalDevice vkPhysicalDevice;
     VkSurfaceKHR vkSurface;
-    VulkanWindow* window;
+    std::shared_ptr<VulkanWindow> window;
 
     void createSwapChain(
-        const VkDevice & vkDevice, 
-        const VkPhysicalDevice & vkPhysicalDevice, 
-        const VkSurfaceKHR & vkSurface,
-        VulkanWindow* window);
+        const VkDevice& vkDevice, 
+        const VkPhysicalDevice& vkPhysicalDevice, 
+        const VkSurfaceKHR& vkSurface,
+        const VulkanWindow& window);
 
     void createImageViews(const VkDevice &vkDevice);
 
     VkSurfaceFormatKHR selectSwapChainSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
     VkPresentModeKHR selectSwapChainPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
-    VkExtent2D selectSwapChainExtent(VulkanWindow* window, const VkSurfaceCapabilitiesKHR &capabilities);
+    VkExtent2D selectSwapChainExtent(const VulkanWindow& window, const VkSurfaceCapabilitiesKHR &capabilities);
 
     SwapChainData swapChainData;
 

@@ -16,9 +16,9 @@
 
 VulkanRenderLoop::VulkanRenderLoop(
     VkDevice vkDevice, 
-    VulkanSwapChain* swapChain, 
-    VulkanRenderPipeline* renderPipeline, 
-    VulkanMemoryHandler* vkMemoryHandler, 
+    std::shared_ptr<VulkanSwapChain> swapChain, 
+    std::shared_ptr<VulkanRenderPipeline> renderPipeline,
+    std::shared_ptr<VulkanMemoryHandler> vkMemoryHandler, 
     VkQueue graphicsQueue, 
     VkQueue transferQueue, 
     VkQueue presentQueue)
@@ -33,8 +33,10 @@ VulkanRenderLoop::VulkanRenderLoop(
 {
     // define frames to use
     frames.resize(MAX_FRAMES_IN_FLIGHT);
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) 
-        this->frames[i] = new Frame();
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        this->frames[i] = std::unique_ptr<Frame>(new Frame());
+    } 
         
     // create command pool and buffer
     createCommandPool(renderPipeline->GetGraphicsFamilyIndex(), renderPipeline->GetTransferFamilyIndex());
@@ -80,7 +82,7 @@ void VulkanRenderLoop::CleanUp()
     // syncing
     for(int i=0; i<MAX_FRAMES_IN_FLIGHT; ++i)
     {
-        Frame* frame = this->frames[i];
+        auto& frame = this->frames[i];
 
         vkDestroySemaphore(vkDevice, frame->imageAvailableSemaphore, nullptr);
         vkDestroySemaphore(vkDevice, frame->renderFinishedSemaphore, nullptr);
@@ -100,10 +102,13 @@ void VulkanRenderLoop::CleanUp()
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) 
     {   
-        Frame* frame = this->frames[i];
+        auto& frame = this->frames[i];
 
         vkDestroyBuffer(vkDevice, frame->uniformBuffer, nullptr);
         vkFreeMemory(vkDevice, frame->uniformBufferMemory, nullptr);
+
+        // destroy frame
+        frame.reset();
     }
 
     vkDestroyDescriptorPool(vkDevice, vkDescriptorPool, nullptr);
@@ -119,7 +124,7 @@ void VulkanRenderLoop::Render()
     // wait until previous frame is finished
     //// todo: implement multiple frames in flight. this avoids idle time (cpu waiting for gpu & vice versa)
     //// https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Frames_in_flight
-    Frame* frame = this->frames[currentFrameIndex];
+    auto& frame = this->frames[currentFrameIndex];
     vkWaitForFences(vkDevice, 1, &frame->isDoneRenderingFence, VK_TRUE, UINT64_MAX);
 
     // acquire next image from swap chain
@@ -237,7 +242,7 @@ void VulkanRenderLoop::createCommandBuffers()
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) 
     {   
         // get frame
-        Frame* frame = this->frames[i];
+        auto& frame = this->frames[i];
 
         // create info: command buffer allocation
         VkCommandBufferAllocateInfo allocInfo{};
@@ -397,7 +402,7 @@ bool VulkanRenderLoop::createUniformBuffers()
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) 
     {   
         // get frame
-        Frame* frame = this->frames[i];
+        auto& frame = this->frames[i];
 
         // define buffer    
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
@@ -464,7 +469,7 @@ bool VulkanRenderLoop::createDescriptorSets()
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) 
     {
         // get frame
-        Frame* frame = this->frames[i];
+        auto& frame = this->frames[i];
 
         // create
         auto descriptorSetLayout = this->pRenderPipeline->GetDescriptorSetLayout();
@@ -608,7 +613,7 @@ void VulkanRenderLoop::createSyncObjects()
     for(int i=0; i<MAX_FRAMES_IN_FLIGHT; ++i)
     {
         // get frame
-        Frame* frame = this->frames[i];
+        auto& frame = this->frames[i];
 
         // create objects
         if (vkCreateSemaphore(vkDevice, &semaphoreInfo, nullptr, &frame->imageAvailableSemaphore) != VK_SUCCESS ||

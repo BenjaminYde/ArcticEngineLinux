@@ -4,6 +4,7 @@
 #include <optional>
 #include <set>
 #include <vulkan/vulkan_core.h>
+#include <memory>
 
 class VulkanWindow;
 class VulkanRenderPipeline;
@@ -14,10 +15,10 @@ class VulkanMemoryHandler;
 class VulkanLoader
 {
 public:
-    VulkanLoader(VulkanWindow* vulkanWindow);
+    VulkanLoader(std::shared_ptr<VulkanWindow> vulkanWindow);
     void Cleanup();
 
-    VulkanRenderLoop* GetRenderLoop();
+    std::shared_ptr<VulkanRenderLoop> GetRenderLoop();
     void ReloadSwapChain();
 
 private:
@@ -51,12 +52,12 @@ private:
     };
 
     VkSurfaceKHR vkSurface;
-    VulkanSwapChain* pSwapchain;
-    VulkanRenderPipeline* pRenderPipeline;
-    VulkanRenderLoop* pRenderLoop;
-    VulkanMemoryHandler* pMemoryHandler;
+    std::shared_ptr<VulkanSwapChain> pSwapchain;
+    std::shared_ptr<VulkanRenderPipeline> pRenderPipeline;
+    std::shared_ptr<VulkanRenderLoop> pRenderLoop;
+    std::shared_ptr<VulkanMemoryHandler> pMemoryHandler;
 
-    void vulkanCreateInstance(VulkanWindow & vulkanWindow);
+    void vulkanCreateInstance(const VulkanWindow & vulkanWindow);
     void vulkanLoadDebugMessenger();
     
     void vulkanLoadPhysicalDevice(

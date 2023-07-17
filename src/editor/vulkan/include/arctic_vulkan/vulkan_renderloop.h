@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <memory>
 #include <vulkan/vulkan_core.h>
 
 class VulkanSwapChain;
@@ -13,9 +14,9 @@ class VulkanRenderLoop
 public:
     VulkanRenderLoop(
         VkDevice vkDevice,
-        VulkanSwapChain* swapChain, 
-        VulkanRenderPipeline* renderPipeline,
-        VulkanMemoryHandler* vkMemoryHandler, 
+        std::shared_ptr<VulkanSwapChain> swapChain, 
+        std::shared_ptr<VulkanRenderPipeline> renderPipeline,
+        std::shared_ptr<VulkanMemoryHandler> vkMemoryHandler, 
         VkQueue GraphicsQueue,
         VkQueue vkTransferQueue,
         VkQueue vkPresentQueue);
@@ -29,13 +30,12 @@ private:
 
     // devices
     VkDevice vkDevice = VK_NULL_HANDLE;
-    VulkanSwapChain* pSwapchain;
-    VulkanRenderPipeline* pRenderPipeline;
+    std::shared_ptr<VulkanSwapChain> pSwapchain;
+    std::shared_ptr<VulkanRenderPipeline> pRenderPipeline;
 
     // commands
     VkCommandPool vkCommandPoolGraphics;
     VkCommandPool vkCommandPoolTransfer;
-    //std::vector<VkCommandBuffer> vkCommandBuffers;
 
     VkQueue vkGraphicsQueue;
     VkQueue vkTransferQueue;
@@ -64,12 +64,12 @@ private:
         void* uniformBufferMapped = nullptr;
     };
 
-    std::vector<Frame*> frames;
+    std::vector<std::unique_ptr<Frame>> frames;
 
     bool isSwapChainDirty;
 
     // memory
-    VulkanMemoryHandler* vkMemoryHandler;
+    std::shared_ptr<VulkanMemoryHandler> vkMemoryHandler;
 
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;

@@ -12,7 +12,7 @@
 #include "arctic_vulkan/vulkan_swapchain.h"
 #include "arctic_vulkan/vulkan_memory_handler.h"
 
-VulkanRenderLoop* VulkanLoader::GetRenderLoop()
+std::shared_ptr<VulkanRenderLoop> VulkanLoader::GetRenderLoop()
 {
     return pRenderLoop;
 }
@@ -28,7 +28,7 @@ void VulkanLoader::ReloadSwapChain()
         pSwapchain->GetImageViews());
 }
 
-VulkanLoader::VulkanLoader(VulkanWindow* vulkanWindow)
+VulkanLoader::VulkanLoader(std::shared_ptr<VulkanWindow> vulkanWindow)
 {
     // check validation layers
     if(enableValidationLayers && !vulkanFoundValidationLayers())
@@ -37,12 +37,12 @@ VulkanLoader::VulkanLoader(VulkanWindow* vulkanWindow)
         return;
     }
 
-    vulkanCreateInstance(*vulkanWindow);
+    vulkanCreateInstance(*vulkanWindow.get());
     vulkanLoadDebugMessenger();
 
     vulkanWindow->CreateSurface(vkInstance, vkSurface);
 
-    pSwapchain = new VulkanSwapChain();
+    pSwapchain = std::make_shared<VulkanSwapChain>();
 
     vulkanLoadPhysicalDevice(vkInstance, vkSurface, *pSwapchain);
     
@@ -59,32 +59,32 @@ VulkanLoader::VulkanLoader(VulkanWindow* vulkanWindow)
     pSwapchain->CreateSwapChain();
 
     // create vulkan memory handler
-    pMemoryHandler = new VulkanMemoryHandler(
+    pMemoryHandler = std::shared_ptr<VulkanMemoryHandler>(new VulkanMemoryHandler(
         vkDevice,
         vkPhysicalDevice,
         vkGraphicsQueue,
         vkTransferQueue
-    );
+    ));
 
     // create render pipeline
-    pRenderPipeline = new VulkanRenderPipeline(
+    pRenderPipeline = std::shared_ptr<VulkanRenderPipeline>(new VulkanRenderPipeline(
         vkDevice,
         queueFamilyIndices.graphicsFamily.value(),
-        queueFamilyIndices.transferFamily.value());
+        queueFamilyIndices.transferFamily.value()));
 
     pRenderPipeline->Load(
         pSwapchain->GetData(), 
         pSwapchain->GetImageViews());
     
     // create render loop
-    pRenderLoop = new VulkanRenderLoop(
+    pRenderLoop = std::shared_ptr<VulkanRenderLoop>(new VulkanRenderLoop(
         vkDevice, 
         pSwapchain, 
         pRenderPipeline, 
         pMemoryHandler,
         vkGraphicsQueue, 
         vkTransferQueue, 
-        vkPresentQueue);
+        vkPresentQueue));
 }
 
 void VulkanLoader::Cleanup()
@@ -93,19 +93,19 @@ void VulkanLoader::Cleanup()
     vkDeviceWaitIdle(vkDevice);
 
     // memory
-    delete pMemoryHandler;
+    pMemoryHandler.reset();
 
     // render loop
     pRenderLoop->CleanUp();
-    delete pRenderLoop;
+    pRenderLoop.reset();
 
     // render pipeline
     pRenderPipeline->CleanUp();
-    delete pRenderPipeline;
+    pRenderPipeline.reset();
 
     // images & swapchain
     pSwapchain->CleanUp(vkDevice);
-    delete pSwapchain;
+    pSwapchain.reset();
 
     // devices
     vkDestroyDevice(vkDevice, nullptr);
@@ -120,7 +120,7 @@ void VulkanLoader::Cleanup()
     vkDestroyInstance(vkInstance, nullptr);
 }
 
-void VulkanLoader::vulkanCreateInstance(VulkanWindow& vulkanWindow)
+void VulkanLoader::vulkanCreateInstance(const VulkanWindow& vulkanWindow)
 {
     // create app info
     VkApplicationInfo appInfo{};

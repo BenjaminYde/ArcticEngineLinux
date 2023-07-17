@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 class VulkanWindow;
 class VulkanLoader;
 class VulkanRenderLoop;
@@ -7,11 +9,12 @@ class VulkanRenderLoop;
 class VulkanContext
 {
 public: 
+    VulkanContext(std::shared_ptr<VulkanWindow> vulkanWindow);
+    virtual ~VulkanContext();
 
-    VulkanContext(VulkanWindow* vulkanWindow);
     void Cleanup();
     void Render();
 
 private:
-    VulkanLoader* pVulkanLoader;
+    std::unique_ptr<VulkanLoader> pVulkanLoader;
 };

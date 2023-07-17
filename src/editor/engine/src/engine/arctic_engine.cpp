@@ -3,6 +3,16 @@
 #include "arctic_vulkan/vulkan_window.h"
 #include "arctic_vulkan/vulkan_context.h"
 
+ArcticEngine::ArcticEngine()
+{
+    
+}
+
+ArcticEngine::~ArcticEngine()
+{
+    
+}
+
 void ArcticEngine::Run()
 {
     // loop while no close window
@@ -26,20 +36,21 @@ void ArcticEngine::Run()
 void ArcticEngine::Initialize()
 {
     // create window
-    pVulkanWindow = new VulkanWindow();
+    pVulkanWindow = std::make_shared<VulkanWindow>();
     pVulkanWindow->CreateWindow();
 
     // load vulkan
-    pVulkanContext = new VulkanContext(pVulkanWindow);
+    pVulkanContext = std::make_unique<VulkanContext>(pVulkanWindow);
 }
 
 void ArcticEngine::Cleanup()
 {
     // cleanup vulkan
     pVulkanContext->Cleanup();
-
+    pVulkanContext.reset();
+    
     // cleanup window
     pVulkanWindow->CleanupWindow();
-    delete pVulkanWindow;
+    pVulkanWindow.reset();
 }
 

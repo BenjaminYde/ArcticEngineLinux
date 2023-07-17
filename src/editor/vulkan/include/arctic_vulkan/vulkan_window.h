@@ -21,7 +21,7 @@ public:
     std::pair<uint32_t,uint32_t> GetFramebufferSize() const;
 
     void CreateWindow();
-    void CreateSurface(const VkInstance& vkInstance, VkSurfaceKHR& vkSurface);
+    void CreateSurface(const VkInstance& vkInstance, VkSurfaceKHR& vkSurface) const;
     void CleanupWindow();
 
 private:

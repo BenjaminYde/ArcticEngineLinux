@@ -4,22 +4,27 @@
 #include "arctic_vulkan/vulkan_renderloop.h"
 #include "arctic_vulkan/vulkan_window.h"
 
-VulkanContext::VulkanContext(VulkanWindow *vulkanWindow)
+VulkanContext::VulkanContext(std::shared_ptr<VulkanWindow> vulkanWindow)
 {
-    pVulkanLoader = new VulkanLoader(vulkanWindow);
+    pVulkanLoader = std::make_unique<VulkanLoader>(vulkanWindow);
+}
+
+VulkanContext::~VulkanContext()
+{
+    
 }
 
 void VulkanContext::Cleanup()
 {
     // cleanup vulkan
     pVulkanLoader->Cleanup();
-    delete pVulkanLoader;
+    pVulkanLoader.reset();
 }
 
 void VulkanContext::Render()
 {
     // get renderloop
-    VulkanRenderLoop* renderLoop = pVulkanLoader->GetRenderLoop();
+    auto renderLoop = pVulkanLoader->GetRenderLoop();
 
     // reload swapchain when dirty
     if(renderLoop->IsSwapChainDirty())

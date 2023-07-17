@@ -52,7 +52,7 @@ void VulkanWindow::CreateWindow()
     //SDL_Delay(100);
 }
 
-void VulkanWindow::CreateSurface(const VkInstance& vkInstance, VkSurfaceKHR& vkSurface)
+void VulkanWindow::CreateSurface(const VkInstance& vkInstance, VkSurfaceKHR& vkSurface) const
 {
     SDL_bool result = SDL_Vulkan_CreateSurface(window, vkInstance, &vkSurface);
     if(result != SDL_TRUE)
