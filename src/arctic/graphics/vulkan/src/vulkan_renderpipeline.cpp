@@ -1,11 +1,11 @@
-#include "arctic_vulkan/vulkan_renderpipeline.h"
+#include "vulkan_renderpipeline.h"
 #include <iostream>
 
 #include <fmt/core.h>
 #include "utilities/file_utility.h"
 #include "utilities/application.h"
 
-#include "arctic_vulkan/rendering_utilities.h"
+#include "rendering_utilities.h"
 
 VulkanRenderPipeline::VulkanRenderPipeline(
     const VkDevice& vkDevice, 

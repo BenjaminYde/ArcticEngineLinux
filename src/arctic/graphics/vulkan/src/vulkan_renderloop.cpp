@@ -1,10 +1,10 @@
-#include "arctic_vulkan/vulkan_renderloop.h"
+#include "vulkan_renderloop.h"
 
-#include "arctic_vulkan/vulkan_swapchain.h"
-#include "arctic_vulkan/vulkan_renderpipeline.h"
-#include "arctic_vulkan/vulkan_memory_handler.h"
-#include "arctic_rendering/vertex.h"
-#include "arctic_rendering/uniform_buffer_object.h"
+#include "vulkan_swapchain.h"
+#include "vulkan_renderpipeline.h"
+#include "vulkan_memory_handler.h"
+#include "arctic/graphics/rhi/vertex.h"
+#include "arctic/graphics/rhi/uniform_buffer_object.h"
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>

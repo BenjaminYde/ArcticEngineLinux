@@ -1,4 +1,4 @@
-#include "arctic_vulkan/vulkan_loader.h"
+#include "vulkan_loader.h"
 
 #include "utilities/file_utility.h"
 #include "utilities/application.h"
@@ -6,11 +6,11 @@
 #include <iostream>
 #include <fmt/core.h>
 
-#include "arctic_vulkan/vulkan_window.h"
-#include "arctic_vulkan/vulkan_renderpipeline.h"
-#include "arctic_vulkan/vulkan_renderloop.h"
-#include "arctic_vulkan/vulkan_swapchain.h"
-#include "arctic_vulkan/vulkan_memory_handler.h"
+#include "arctic/graphics/vulkan/vulkan_window.h"
+#include "vulkan_renderpipeline.h"
+#include "vulkan_renderloop.h"
+#include "vulkan_swapchain.h"
+#include "vulkan_memory_handler.h"
 
 std::shared_ptr<VulkanRenderLoop> VulkanLoader::GetRenderLoop()
 {

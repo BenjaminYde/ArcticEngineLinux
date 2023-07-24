@@ -4,7 +4,7 @@ set(ARCTIC_ENGINE_VERSION_MINOR 1)
 set(ARCTIC_ENGINE_VERSION_PATCH 0)
 
 # create target
-set(TARGET ArcticEngine)
+set(TARGET ARCTIC_CORE_ENGINE)
 message("target is ${TARGET}")
 add_library(${TARGET} STATIC)
 
@@ -18,10 +18,8 @@ set_target_properties(${TARGET} PROPERTIES
 
 # set sources
 target_sources(${TARGET}
-        PUBLIC
-        ${INCLUDE_DIR}/engine/arctic_engine.h
         PRIVATE
-        ${SRC_DIR}/engine/arctic_engine.cpp
+        ${SRC_DIR}/arctic_engine.cpp
         )
 
 # set includes
@@ -38,30 +36,30 @@ FindPackage_SDL(  ${TARGET})
 target_link_libraries(
         ${TARGET} 
         PRIVATE 
-        ArcticVulkan)
+        ARCTIC_GRAPHICS_VULKAN)
 
 get_target_property(
-        ArcticVulkan_INCLUDE_DIR
-        ArcticVulkan
+        ARCTIC_GRAPHICS_VULKAN_INCLUDE_DIR
+        ARCTIC_GRAPHICS_VULKAN
         INCLUDE_DIR)
 
 target_include_directories(
         ${TARGET} 
         PRIVATE 
-        ${ArcticVulkan_INCLUDE_DIR})
+        ${ARCTIC_GRAPHICS_VULKAN_INCLUDE_DIR})
 
 # add module: arctic rendering
 target_link_libraries(
         ${TARGET} 
         PRIVATE 
-        ArcticRendering)
+        ARCTIC_GRAPHICS_RHI)
 
 get_target_property(
-        ArcticRendering_INCLUDE_DIR
-        ArcticRendering
+        ARCTIC_GRAPHICS_RHI_INCLUDE_DIR
+        ARCTIC_GRAPHICS_RHI
         INCLUDE_DIR)
 
 target_include_directories(
         ${TARGET} 
         PRIVATE 
-        ${ArcticRendering_INCLUDE_DIR})
+        ${ARCTIC_GRAPHICS_RHI_INCLUDE_DIR})

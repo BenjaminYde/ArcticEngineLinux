@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan_core.h>
-#include "arctic_rendering/vertex.h"
+#include "arctic/graphics/rhi/vertex.h"
 #include <array>
 
 class RenderingUtilities

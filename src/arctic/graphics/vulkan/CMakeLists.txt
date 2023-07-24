@@ -1,10 +1,10 @@
 # configure target
-set(ARCTIC_VULKAN_VERSION_MAJOR 0)
-set(ARCTIC_VULKAN_VERSION_MINOR 1)
-set(ARCTIC_VULKAN_VERSION_PATCH 0)
+#set(ARCTIC_VULKAN_VERSION_MAJOR 0)
+#set(ARCTIC_VULKAN_VERSION_MINOR 1)
+#set(ARCTIC_VULKAN_VERSION_PATCH 0)
 
 # create target
-set(TARGET ArcticVulkan)
+set(TARGET ARCTIC_GRAPHICS_VULKAN)
 message("target is ${TARGET}")
 add_library(${TARGET} STATIC)
 
@@ -61,18 +61,18 @@ target_include_directories(
         PRIVATE 
         ${Utilties_INCLUDE_DIR})
 
-# add module: arctic rendering
+# add module: arctic graphics rhi
 target_link_libraries(
         ${TARGET} 
         PRIVATE 
-        ArcticRendering)
+        ARCTIC_GRAPHICS_RHI)
 
 get_target_property(
-        ArcticRendering_INCLUDE_DIR
-        ArcticRendering
+        ARCTIC_GRAPHICS_RHI_INCLUDE_DIR
+        ARCTIC_GRAPHICS_RHI
         INCLUDE_DIR)
 
 target_include_directories(
         ${TARGET} 
         PRIVATE 
-        ${ArcticRendering_INCLUDE_DIR})
+        ${ARCTIC_GRAPHICS_RHI_INCLUDE_DIR})

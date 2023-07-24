@@ -1,5 +1,4 @@
-#include "arctic_vulkan/rendering_utilities.h"
-
+#include "rendering_utilities.h"
 
 /// @brief Creates a description that tells Vulkan how to pass the vertex data format to the vertex shader once it's been uploaded into GPU memory
 /// @param vertex 
