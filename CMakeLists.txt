@@ -37,6 +37,9 @@ else()
         message(FATAL_ERROR "Project must be compiled using preset! Current compiler is ${CMAKE_CXX_COMPILER_ID}")
 endif()
 
+# c++ flags
+add_compile_options(-Wshadow)
+
 # defines
 add_definitions(-DARCTIC_ASSETS_DIR="${CMAKE_CURRENT_LIST_DIR}/assets")
 

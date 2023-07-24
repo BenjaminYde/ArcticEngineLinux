@@ -249,7 +249,7 @@ void VulkanLoader::vulkanLoadPhysicalDevice(
     }
 }
 
-void VulkanLoader::vulkanCreateLogicalDevice(const VkPhysicalDevice & vkPhysicalDevice, QueueFamilyIndices indices)
+void VulkanLoader::vulkanCreateLogicalDevice(const VkPhysicalDevice& physicalDevice, QueueFamilyIndices indices)
 {
     // create device queue infos
     // >> create set of queue families (re-use queue families instead of creating duplicates)
@@ -285,7 +285,7 @@ void VulkanLoader::vulkanCreateLogicalDevice(const VkPhysicalDevice & vkPhysical
     createInfo.ppEnabledExtensionNames = requiredDeviceExtensions.data();
 
     // create device
-    VkResult result = vkCreateDevice(vkPhysicalDevice, &createInfo, nullptr, &vkDevice);
+    VkResult result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &vkDevice);
     if(result != VK_SUCCESS)
     {
         std::cout << "error: vulkan: failed to create logical device!";
@@ -471,12 +471,13 @@ VkResult VulkanLoader::vulkanCreateDebugUtilsMessengerEXT(
 
 void VulkanLoader::vulkanDestroyDebugUtilsMessengerEXT(
         VkInstance instance,
-        VkDebugUtilsMessengerEXT debugMessenger,
+        VkDebugUtilsMessengerEXT debugUtilsMessenger,
         const VkAllocationCallbacks* pAllocator)
 {
     auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-    if (func != nullptr)
-        func(instance, debugMessenger, pAllocator);
+    if (func != nullptr){
+        func(instance, debugUtilsMessenger, pAllocator);
+    }
 }
 
 void VulkanLoader::vulkanPopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
