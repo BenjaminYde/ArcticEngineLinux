@@ -9,7 +9,7 @@
     {
       "name": "linux-clang-debug",
       "displayName": "clang-debug-x64",
-      "description": "Clang 16.0.4 (x86_64)",
+      "description": "Clang 17.0.6 (x86_64)",
       "generator": "Ninja",
       "architecture": {
         "value": "x64",
@@ -21,13 +21,13 @@
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}",
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
-        "CMAKE_CXX_COMPILER_VERSION": "16.0.4"
+        "CMAKE_CXX_COMPILER_VERSION": "17.0.6"
       }
     },
     {
       "name": "linux-clang-release",
       "displayName": "clang-release-x64",
-      "description": "Clang 16.0.4 (x86_64)",
+      "description": "Clang 17.0.6 (x86_64)",
       "generator": "Ninja",
       "architecture": {
         "value": "x64",
@@ -39,7 +39,7 @@
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}",
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
-        "CMAKE_CXX_COMPILER_VERSION": "16.0.4"
+        "CMAKE_CXX_COMPILER_VERSION": "17.0.6"
       }
     }
   ]

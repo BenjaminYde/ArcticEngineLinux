@@ -2,7 +2,7 @@
 function(FindPackage_FMT TARGET_NAME)
     FetchContent_Declare(external_fmt
             GIT_REPOSITORY    https://github.com/fmtlib/fmt
-            GIT_TAG           9.1.0)
+            GIT_TAG           10.2.1)
 
     FetchContent_MakeAvailable(external_fmt)
 

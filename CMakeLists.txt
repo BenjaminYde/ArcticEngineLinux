@@ -38,7 +38,7 @@ else()
 endif()
 
 # c++ flags
-add_compile_options(-Wshadow)
+#add_compile_options(-Wshadow)
 
 # defines
 add_definitions(-DARCTIC_ASSETS_DIR="${CMAKE_CURRENT_LIST_DIR}/assets")

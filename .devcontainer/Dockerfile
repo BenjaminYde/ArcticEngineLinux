@@ -32,7 +32,7 @@ RUN apt -qq update && \
     apt -qq autoremove
 
 # Install CMAKE
-ENV CMAKE_VERSION 3.26.3
+ENV CMAKE_VERSION 3.28.1
 RUN apt update && \
     apt -qq install -y --no-install-recommends \
         graphviz \
@@ -81,7 +81,7 @@ ENV PATH="/opt/cmake/bin:${PATH}"
 #ENV PATH="/opt/clang-15.0.7/bin:${PATH}"
 
 # Download and install Clang binaries
-ENV CLANG_VERSION 16.0.4
+ENV CLANG_VERSION 17.0.6
 RUN cd /tmp && \
     curl -L -O https://github.com/llvm/llvm-project/releases/download/llvmorg-${CLANG_VERSION}/clang+llvm-${CLANG_VERSION}-x86_64-linux-gnu-ubuntu-22.04.tar.xz && \
     tar -xf clang+llvm-${CLANG_VERSION}-x86_64-linux-gnu-ubuntu-22.04.tar.xz && \
@@ -94,11 +94,11 @@ RUN cd /tmp && \
 ENV PATH="/opt/clang-${CLANG_VERSION}/bin:${PATH}"
 
 # Download and extract the LunarG Vulkan SDK
-ENV VULKAN_SDK_VERSION 1.3.250.1
+ENV VULKAN_SDK_VERSION 1.3.268.0
 RUN cd /tmp && \
-    curl -L -O https://sdk.lunarg.com/sdk/download/${VULKAN_SDK_VERSION}/linux/vulkansdk-linux-x86_64-${VULKAN_SDK_VERSION}.tar.gz && \
-    tar zxvf vulkansdk-linux-x86_64-${VULKAN_SDK_VERSION}.tar.gz && \
-    rm vulkansdk-linux-x86_64-${VULKAN_SDK_VERSION}.tar.gz && \
+    curl -L -O https://sdk.lunarg.com/sdk/download/${VULKAN_SDK_VERSION}/linux/vulkansdk-linux-x86_64-${VULKAN_SDK_VERSION}.tar.xz && \
+    tar xJf vulkansdk-linux-x86_64-${VULKAN_SDK_VERSION}.tar.xz && \
+    rm vulkansdk-linux-x86_64-${VULKAN_SDK_VERSION}.tar.xz && \
     mv ${VULKAN_SDK_VERSION} /opt/vulkansdk-${VULKAN_SDK_VERSION}
     
 # Setup Vulkan SDK environment variables
@@ -120,7 +120,7 @@ RUN ICD_NVIDIA="/vulkan-icd/nvidia_icd.json" && \
     && echo '    "file_format_version" : "1.0.0",' >> $ICD_NVIDIA \
     && echo '    "ICD": {' >> $ICD_NVIDIA \
     && echo '        "library_path": "libGLX_nvidia.so.0",' >> $ICD_NVIDIA \
-    && echo '        "api_version" : "1.3.250"' >> $ICD_NVIDIA \
+    && echo '        "api_version" : "1.3.268"' >> $ICD_NVIDIA \
     && echo '    }' >> $ICD_NVIDIA \
     && echo '}' >> /$ICD_NVIDIA
 
@@ -189,7 +189,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libdecor-0-dev
 
 # Download and install SDL2 from source
-ENV SDL_VERSION 2.28.0
+ENV SDL_VERSION 2.28.5
 #RUN cd /tmp && \
 #    curl -L -O https://github.com/libsdl-org/SDL/archive/refs/tags/release-${SDL2_VERSION}.tar.gz && \
 #    tar xzf SDL2-${SDL2_VERSION}.tar.gz && \
@@ -217,7 +217,7 @@ RUN cd /tmp/SDL2-${SDL_VERSION} && \
 #ENV CMAKE_PREFIX_PATH="/opt/SDL2-${SDL_VERSION}:${CMAKE_PREFIX_PATH}"
 
 # Install RenderDoc
-ENV RENDERDOC_VERSION 1.27
+ENV RENDERDOC_VERSION 1.30
 RUN cd /tmp && \
     curl -L -O https://renderdoc.org/stable/${RENDERDOC_VERSION}/renderdoc_${RENDERDOC_VERSION}.tar.gz \
     && tar -xzf renderdoc_${RENDERDOC_VERSION}.tar.gz -C /opt \
@@ -226,7 +226,6 @@ ENV PATH="/opt/renderdoc_${RENDERDOC_VERSION}/bin:${PATH}"
 RUN sudo apt-get install libproxy1v5
 
 # Install RenderDoc extensions
-ENV RENDERDOC_VERSION 1.27
 RUN cd /tmp && \
     curl -L -O https://renderdoc.org/stable/${RENDERDOC_VERSION}/renderdoc_${RENDERDOC_VERSION}.tar.gz \
     && tar -xzf renderdoc_${RENDERDOC_VERSION}.tar.gz -C /opt \
