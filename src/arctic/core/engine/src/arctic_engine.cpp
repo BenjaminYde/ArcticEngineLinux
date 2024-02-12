@@ -1,7 +1,7 @@
 #include "arctic/core/engine/arctic_engine.h"
 #include <SDL2/SDL.h>
-#include "arctic/graphics/vulkan/vulkan_window.h"
-#include "arctic/graphics/vulkan/vulkan_context.h"
+#include "arctic/graphics/vulkan/vk_window.h"
+#include "arctic/graphics/vulkan/vk_context.h"
 
 ArcticEngine::ArcticEngine()
 {

@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <vulkan/vulkan_core.h>
-#include "vulkan_swapchain.h"
+#include "vk_swapchain.h"
 
 class VulkanRenderPipeline
 {

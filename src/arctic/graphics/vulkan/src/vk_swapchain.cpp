@@ -1,5 +1,5 @@
-#include "vulkan_swapchain.h"
-#include "arctic/graphics/vulkan/vulkan_window.h"
+#include "vk_swapchain.h"
+#include "arctic/graphics/vulkan/vk_window.h"
 #include <iostream>
 
 void VulkanSwapChain::Configure(

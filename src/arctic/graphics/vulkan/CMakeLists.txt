@@ -19,14 +19,14 @@ set_target_properties(${TARGET} PROPERTIES
 # set sources
 target_sources(${TARGET}
         PRIVATE
-        ${SRC_DIR}/vulkan_context.cpp 
-        ${SRC_DIR}/vulkan_renderloop.cpp
-        ${SRC_DIR}/vulkan_renderpipeline.cpp
-        ${SRC_DIR}/vulkan_swapchain.cpp
-        ${SRC_DIR}/vulkan_loader.cpp
-        ${SRC_DIR}/vulkan_window.cpp
-        ${SRC_DIR}/vulkan_memory_handler.cpp
-        ${SRC_DIR}/rendering_utilities.cpp
+        ${SRC_DIR}/vk_context.cpp 
+        ${SRC_DIR}/vk_renderloop.cpp
+        ${SRC_DIR}/vk_renderpipeline.cpp
+        ${SRC_DIR}/vk_swapchain.cpp
+        ${SRC_DIR}/vk_loader.cpp
+        ${SRC_DIR}/vk_window.cpp
+        ${SRC_DIR}/vk_memory_handler.cpp
+        ${SRC_DIR}/render_utils.cpp
         )
 
 # set includes
@@ -39,6 +39,7 @@ FindPackage_Vulkan(${TARGET})
 FindPackage_SDL(  ${TARGET})
 FindPackage_GLM(   ${TARGET})
 FindPackage_FMT(   ${TARGET})
+FindPackage_STB(   ${TARGET})
 
 # add module: x11
 find_package(X11 REQUIRED)

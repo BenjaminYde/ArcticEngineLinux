@@ -1,4 +1,4 @@
-#include "arctic/graphics/vulkan/vulkan_window.h"
+#include "arctic/graphics/vulkan/vk_window.h"
 
 #include <iostream>
 

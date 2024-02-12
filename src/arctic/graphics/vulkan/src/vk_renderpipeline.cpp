@@ -1,11 +1,11 @@
-#include "vulkan_renderpipeline.h"
+#include "vk_renderpipeline.h"
 #include <iostream>
 
 #include <fmt/core.h>
 #include "utilities/file_utility.h"
 #include "utilities/application.h"
 
-#include "rendering_utilities.h"
+#include "render_utils.h"
 
 VulkanRenderPipeline::VulkanRenderPipeline(
     const VkDevice& vkDevice, 
@@ -217,8 +217,8 @@ void VulkanRenderPipeline::createPipeline()
     //> describes the format of the vertex data that will be passed to the vertex shader
     //> bindings: spacing between data and whether the data is per-vertex or per-instance
     //> attribute descriptions: type of the attributes passed to the vertex shader, which binding to load them from and at which offset
-    auto vertexBindingDesc = RenderingUtilities::GetBindingDescription();
-    auto vertexAttributeDescs = RenderingUtilities::GetAttributeDescriptions();
+    auto vertexBindingDesc = RenderUtils::GetBindingDescription();
+    auto vertexAttributeDescs = RenderUtils::GetAttributeDescriptions();
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;

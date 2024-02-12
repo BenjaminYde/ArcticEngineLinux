@@ -4,7 +4,7 @@
 #include "arctic/graphics/rhi/vertex.h"
 #include <array>
 
-class RenderingUtilities
+class RenderUtils
 {
 public:
     static VkVertexInputBindingDescription GetBindingDescription();

@@ -71,13 +71,21 @@ private:
     // memory
     std::shared_ptr<VulkanMemoryHandler> vkMemoryHandler;
 
+    VkDescriptorPool vkDescriptorPool;
+
+    // .. mesh
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
 
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
 
-    VkDescriptorPool vkDescriptorPool;
+    // .. image
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+
+    VkImage textureImage;
+    VkDeviceMemory textureImageMemory;
 
     // commands
     void createCommandPool(uint32_t graphicsFamilyIndex, uint32_t transferFamilyIndex);
@@ -96,4 +104,7 @@ private:
 
     // syncing
     void createSyncObjects();
+
+    // images
+    void createTextureImage();
 };

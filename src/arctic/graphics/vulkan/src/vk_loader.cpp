@@ -1,4 +1,4 @@
-#include "vulkan_loader.h"
+#include "vk_loader.h"
 
 #include "utilities/file_utility.h"
 #include "utilities/application.h"
@@ -6,11 +6,11 @@
 #include <iostream>
 #include <fmt/core.h>
 
-#include "arctic/graphics/vulkan/vulkan_window.h"
-#include "vulkan_renderpipeline.h"
-#include "vulkan_renderloop.h"
-#include "vulkan_swapchain.h"
-#include "vulkan_memory_handler.h"
+#include "arctic/graphics/vulkan/vk_window.h"
+#include "vk_renderpipeline.h"
+#include "vk_renderloop.h"
+#include "vk_swapchain.h"
+#include "vk_memory_handler.h"
 
 std::shared_ptr<VulkanRenderLoop> VulkanLoader::GetRenderLoop()
 {
@@ -198,7 +198,7 @@ std::vector<const char*> VulkanLoader::vulkanGetRequiredExtensions(const VulkanW
     return extensions;
 }
 
-#pragma region vulkan_devices
+#pragma region vk_devices
 
 void VulkanLoader::vulkanLoadPhysicalDevice(
     const VkInstance& instance,
@@ -393,14 +393,14 @@ bool VulkanLoader::findRequiredDeviceExtensions(const VkPhysicalDevice & device)
     return requiredExtensions.empty();
 }
 
-#pragma endregion vulkan_devices
+#pragma endregion vk_devices
 
-#pragma region vulkan_pipeline
+#pragma region vk_pipeline
 
 
-#pragma endregion vulkan_pipeline
+#pragma endregion vk_pipeline
 
-#pragma region vulkan_validation
+#pragma region vk_validation
 
 void VulkanLoader::vulkanLoadDebugMessenger()
 {
@@ -505,4 +505,4 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanLoader::debugCallback(
     return VK_FALSE;
 }
 
-#pragma endregion vulkan_validation
+#pragma endregion vk_validation

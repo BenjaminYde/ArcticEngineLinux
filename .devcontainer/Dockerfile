@@ -32,7 +32,7 @@ RUN apt -qq update && \
     apt -qq autoremove
 
 # Install CMAKE
-ENV CMAKE_VERSION 3.28.1
+ENV CMAKE_VERSION 3.28.3
 RUN apt update && \
     apt -qq install -y --no-install-recommends \
         graphviz \

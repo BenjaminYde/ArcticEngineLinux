@@ -1,9 +1,9 @@
-#include "rendering_utilities.h"
+#include "render_utils.h"
 
 /// @brief Creates a description that tells Vulkan how to pass the vertex data format to the vertex shader once it's been uploaded into GPU memory
 /// @param vertex 
 /// @return 
-VkVertexInputBindingDescription RenderingUtilities::GetBindingDescription()
+VkVertexInputBindingDescription RenderUtils::GetBindingDescription()
 {
     VkVertexInputBindingDescription bindingDesc{};
     bindingDesc.binding = 0;
@@ -15,7 +15,7 @@ VkVertexInputBindingDescription RenderingUtilities::GetBindingDescription()
 /// @brief Creates an array of vertex attributes from a vertex originating from a binding description
 /// @param vertex 
 /// @return 
-std::array<VkVertexInputAttributeDescription, 2> RenderingUtilities::GetAttributeDescriptions()
+std::array<VkVertexInputAttributeDescription, 2> RenderUtils::GetAttributeDescriptions()
 {
     std::array<VkVertexInputAttributeDescription, 2> attributeDescs;
 

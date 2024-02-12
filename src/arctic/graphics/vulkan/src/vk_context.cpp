@@ -1,8 +1,8 @@
-#include "arctic/graphics/vulkan/vulkan_context.h"
+#include "arctic/graphics/vulkan/vk_context.h"
 
-#include "vulkan_loader.h"
-#include "vulkan_renderloop.h"
-#include "arctic/graphics/vulkan/vulkan_window.h"
+#include "vk_loader.h"
+#include "vk_renderloop.h"
+#include "arctic/graphics/vulkan/vk_window.h"
 
 VulkanContext::VulkanContext(std::shared_ptr<VulkanWindow> vulkanWindow)
 {
