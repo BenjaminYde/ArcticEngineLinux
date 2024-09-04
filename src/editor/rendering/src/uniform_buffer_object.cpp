@@ -1,1 +1,0 @@
-#include "arctic_rendering/uniform_buffer_object.h"

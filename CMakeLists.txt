@@ -1,5 +1,5 @@
 # configure cmake version
-cmake_minimum_required(VERSION 3.26 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.28 FATAL_ERROR)
 
 # cmake include modules
 include(FetchContent)
@@ -36,6 +36,9 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 else()
         message(FATAL_ERROR "Project must be compiled using preset! Current compiler is ${CMAKE_CXX_COMPILER_ID}")
 endif()
+
+# c++ flags
+#add_compile_options(-Wshadow)
 
 # defines
 add_definitions(-DARCTIC_ASSETS_DIR="${CMAKE_CURRENT_LIST_DIR}/assets")

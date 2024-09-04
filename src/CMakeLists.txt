@@ -1,2 +1,2 @@
-add_subdirectory(editor)
+add_subdirectory(arctic)
 add_subdirectory(game)
