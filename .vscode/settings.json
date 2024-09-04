@@ -70,6 +70,9 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp",
-        "charconv": "cpp"
+        "charconv": "cpp",
+        "source_location": "cpp",
+        "ranges": "cpp",
+        "span": "cpp"
     }
 }

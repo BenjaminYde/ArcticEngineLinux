@@ -3,7 +3,7 @@
 #include "vk_swapchain.h"
 #include "vk_renderpipeline.h"
 #include "vk_memory_handler.h"
-#include "utilities/application.h"
+#include "arctic/core/utilities/application.h"
 #include "arctic/graphics/rhi/vertex.h"
 #include "arctic/graphics/rhi/uniform_buffer_object.h"
 

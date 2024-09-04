@@ -10,29 +10,30 @@ add_library(${TARGET} STATIC)
 set_target_properties(${TARGET} PROPERTIES LINKER_LANGUAGE CXX)
 
 # set variables
-set(INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include)
-set(INCLUDE_DIR_FULL ${CMAKE_CURRENT_LIST_DIR}/include/arctic/graphics/rhi/)
-set(SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src)
+set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
+set(SRC_DIR ${CMAKE_CURRENT_LIST_DIR})
 
 # set properties
 set_target_properties(
     ${TARGET} 
     PROPERTIES
-        INCLUDE_DIR ${INCLUDE_DIR})
+    INCLUDE_DIR ${INCLUDE_DIR}
+)
 
 # set sources
-target_sources(${TARGET}
+target_sources(
+    ${TARGET}
     PUBLIC
-    ${INCLUDE_DIR_FULL}/uniform_buffer_object.h
-    ${INCLUDE_DIR_FULL}/vertex.h
-    )
+    ${INCLUDE_DIR}/arctic/graphics/rhi/uniform_buffer_object.h
+    ${INCLUDE_DIR}/arctic/graphics/rhi/vertex.h
+)
 
 # set includes
 target_include_directories(
     ${TARGET}
     PRIVATE
-        ${INCLUDE_DIR}
-    )
+    ${INCLUDE_DIR}
+)
 
 # link packages
 FindPackage_GLM(${TARGET})

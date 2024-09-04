@@ -32,7 +32,7 @@ RUN apt -qq update && \
     apt -qq autoremove
 
 # Install CMAKE
-ENV CMAKE_VERSION 3.28.3
+ENV CMAKE_VERSION 3.30.3
 RUN apt update && \
     apt -qq install -y --no-install-recommends \
         graphviz \
@@ -94,7 +94,7 @@ RUN cd /tmp && \
 ENV PATH="/opt/clang-${CLANG_VERSION}/bin:${PATH}"
 
 # Download and extract the LunarG Vulkan SDK
-ENV VULKAN_SDK_VERSION 1.3.268.0
+ENV VULKAN_SDK_VERSION 1.3.290.0
 RUN cd /tmp && \
     curl -L -O https://sdk.lunarg.com/sdk/download/${VULKAN_SDK_VERSION}/linux/vulkansdk-linux-x86_64-${VULKAN_SDK_VERSION}.tar.xz && \
     tar xJf vulkansdk-linux-x86_64-${VULKAN_SDK_VERSION}.tar.xz && \
@@ -120,7 +120,7 @@ RUN ICD_NVIDIA="/vulkan-icd/nvidia_icd.json" && \
     && echo '    "file_format_version" : "1.0.0",' >> $ICD_NVIDIA \
     && echo '    "ICD": {' >> $ICD_NVIDIA \
     && echo '        "library_path": "libGLX_nvidia.so.0",' >> $ICD_NVIDIA \
-    && echo '        "api_version" : "1.3.268"' >> $ICD_NVIDIA \
+    && echo '        "api_version" : "1.3.290"' >> $ICD_NVIDIA \
     && echo '    }' >> $ICD_NVIDIA \
     && echo '}' >> /$ICD_NVIDIA
 

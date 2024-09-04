@@ -2,8 +2,8 @@
 #include <iostream>
 
 #include <fmt/core.h>
-#include "utilities/file_utility.h"
-#include "utilities/application.h"
+#include "arctic/core/utilities/file_utility.h"
+#include "arctic/core/utilities/application.h"
 
 #include "render_utils.h"
 

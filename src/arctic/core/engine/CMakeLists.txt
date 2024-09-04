@@ -9,26 +9,31 @@ message("target is ${TARGET}")
 add_library(${TARGET} STATIC)
 
 # set variables
-set(INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include)
-set(SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src)
+set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
+set(SRC_DIR ${CMAKE_CURRENT_LIST_DIR})
 
 # set properties
-set_target_properties(${TARGET} PROPERTIES
-        INCLUDE_DIR ${INCLUDE_DIR})
+set_target_properties(
+        ${TARGET} 
+        PROPERTIES
+        INCLUDE_DIR ${INCLUDE_DIR}
+)
 
 # set sources
-target_sources(${TARGET}
+target_sources(
+        ${TARGET}
         PRIVATE
         ${SRC_DIR}/arctic_engine.cpp
-        )
+)
 
 # set includes
-target_include_directories(${TARGET}
+target_include_directories(
+        ${TARGET}
         PRIVATE
         ${INCLUDE_DIR}
-        )
+)
 
-FindPackage_SDL(  ${TARGET})
+FindPackage_SDL(${TARGET})
 #FindPackage_Vulkan(${TARGET})
 #FindPackage_GLM(${TARGET})
 
