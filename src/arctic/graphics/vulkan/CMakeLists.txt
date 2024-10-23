@@ -45,6 +45,7 @@ FindPackage_SDL(${TARGET})
 FindPackage_GLM(${TARGET})
 FindPackage_FMT(${TARGET})
 FindPackage_STB(${TARGET})
+FindPackage_VK_MEM_ALLOC(${TARGET})
 
 # add module: x11
 find_package(X11 REQUIRED)

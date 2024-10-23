@@ -103,7 +103,10 @@ void VulkanRenderLoop::CleanUp()
     
     // buffers
     vkDestroyBuffer(vkDevice, vertexBuffer, nullptr);
-    vkFreeMemory(vkDevice, vertexBufferMemory, nullptr);
+    this->vertexBuffer = VK_NULL_HANDLE;
+    //vkFreeMemory(vkDevice, vertexBufferMemory, nullptr);
+
+    vmaDestroyBuffer(vkMemoryHandler->vmaAllocator, this->vertexBuffer, this->vertexBufferAllocation);
 
     vkDestroyBuffer(vkDevice, indexBuffer, nullptr);
     vkFreeMemory(vkDevice, indexBufferMemory, nullptr);
@@ -120,8 +123,6 @@ void VulkanRenderLoop::CleanUp()
     }
 
     vkDestroyDescriptorPool(vkDevice, vkDescriptorPool, nullptr);
-
-    // image
 }
 
 bool VulkanRenderLoop::IsSwapChainDirty() const
@@ -280,22 +281,29 @@ bool VulkanRenderLoop::createVertexBuffer(std::vector<Vertex> vertices)
         VkDeviceSize bufferSize = sizeof(Vertex) * vertices.size();
 
         VkBuffer vertexBufferStaging;
-        VkDeviceMemory vertexBufferMemoryStaging;
+        VmaAllocation bufferAllocationStaging;
 
         // create vertex buffer: staging (cpu interaction)
         // >> Buffer can be used as source in a memory transfer operation
         {
             VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-            VkMemoryPropertyFlags memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-            if(!vkMemoryHandler->CreateBuffer(bufferSize, usage, memoryProperties, vertexBufferStaging, vertexBufferMemoryStaging))
-                return false;
-        
+            VkBufferCreateInfo bufferInfo{};
+            bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+            bufferInfo.size = bufferSize;
+            bufferInfo.usage = usage;
+            bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+            
+            VmaAllocationCreateInfo allocCreateInfo{};
+            allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+            allocCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+            VkResult result = vmaCreateBuffer(vkMemoryHandler->vmaAllocator, &bufferInfo, &allocCreateInfo, &vertexBufferStaging, &bufferAllocationStaging, nullptr);
+
             // copy vertices to memory
             void* data;
-            vkMapMemory(this->vkDevice, vertexBufferMemoryStaging, 0, bufferSize, 0, &data);
-                memcpy(data, vertices.data(), (size_t) bufferSize);
-            vkUnmapMemory(this->vkDevice, vertexBufferMemoryStaging);
+            result = vmaMapMemory(vkMemoryHandler->vmaAllocator, bufferAllocationStaging, &data);
+            memcpy(data, vertices.data(), (size_t) bufferSize);
+            vmaUnmapMemory(vkMemoryHandler->vmaAllocator, bufferAllocationStaging);
         }
 
         // create vertex buffer: final (gpu interaction)
@@ -303,32 +311,56 @@ bool VulkanRenderLoop::createVertexBuffer(std::vector<Vertex> vertices)
         // >> The finalvertexBuffer is allocated from a memory type that is device local, which generally means that we're not able to use vkMapMemory
         {
             VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-            VkMemoryPropertyFlags memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-            if(!vkMemoryHandler->CreateBuffer(bufferSize, usage, memoryProperties, this->vertexBuffer, this->vertexBufferMemory))
-                return false;
+            VkBufferCreateInfo bufferInfo{};
+            bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+            bufferInfo.size = bufferSize;
+            bufferInfo.usage = usage;
+            bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+            VmaAllocationCreateInfo allocCreateInfo{};
+            allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+            //allocCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+            VkResult result = vmaCreateBuffer(vkMemoryHandler->vmaAllocator, &bufferInfo, &allocCreateInfo, &this->vertexBuffer, &this->vertexBufferAllocation, nullptr);
         }
 
-        // copy vertex buffer data from stating to final
+        // copy vertex buffer data from staging to final
         vkMemoryHandler->CopyBuffer(vertexBufferStaging, this->vertexBuffer, bufferSize, this->vkCommandPoolTransfer);
 
         // cleanup vertex buffer staging (not used anymore)
-        vkDestroyBuffer(this->vkDevice, vertexBufferStaging, nullptr);
-        vkFreeMemory(this->vkDevice, vertexBufferMemoryStaging, nullptr);
+        vmaDestroyBuffer(vkMemoryHandler->vmaAllocator, vertexBufferStaging, bufferAllocationStaging);
     }
     else
     {
         VkDeviceSize bufferSize = sizeof(Vertex) * vertices.size();
         VkBufferUsageFlags usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-        VkMemoryPropertyFlags memoryPropeties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        //VkMemoryPropertyFlags memoryPropeties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-        if(!vkMemoryHandler->CreateBuffer(bufferSize, usage, memoryPropeties, this->vertexBuffer, this->vertexBufferMemory))
-            return false;
+        //if(!vkMemoryHandler->CreateBuffer(bufferSize, usage, memoryPropeties, this->vertexBuffer, this->vertexBufferMemory))
+            //return false;
 
+        //void* data;
+        //vkMapMemory(this->vkDevice, this->vertexBufferMemory, 0, bufferSize, 0, &data);
+        //    memcpy(data, vertices.data(), (size_t) bufferSize);
+        //vkUnmapMemory(this->vkDevice, this->vertexBufferMemory);
+
+
+        VkBufferCreateInfo bufferInfo{};
+        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferInfo.size = bufferSize;
+        bufferInfo.usage = usage;
+        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        VmaAllocationCreateInfo allocCreateInfo{};
+        allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+        allocCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+        VkResult result = vmaCreateBuffer(vkMemoryHandler->vmaAllocator, &bufferInfo, &allocCreateInfo, &this->vertexBuffer, &this->vertexBufferAllocation, nullptr);
+
+        // copy vertices to memory
         void* data;
-        vkMapMemory(this->vkDevice, this->vertexBufferMemory, 0, bufferSize, 0, &data);
-            memcpy(data, vertices.data(), (size_t) bufferSize);
-        vkUnmapMemory(this->vkDevice, this->vertexBufferMemory);
+        result = vmaMapMemory(vkMemoryHandler->vmaAllocator, this->vertexBufferAllocation, &data);
+        memcpy(data, vertices.data(), (size_t) bufferSize);
+        vmaUnmapMemory(vkMemoryHandler->vmaAllocator, this->vertexBufferAllocation);
     }
 
     return true;

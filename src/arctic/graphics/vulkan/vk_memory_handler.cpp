@@ -2,9 +2,12 @@
 #include <iostream>
 #include <vector>
 
+#include "vk_mem_alloc.h"
+
 VulkanMemoryHandler::VulkanMemoryHandler(
     VkDevice& vkDevice,
-    VkPhysicalDevice& vkPhysicalDevice, 
+    VkPhysicalDevice& vkPhysicalDevice,
+    VkInstance& vkInstance,
     VkQueue& vkGraphicsQueue,
     VkQueue& vkTransferQueue)
 :
@@ -13,6 +16,24 @@ vkPhysicalDevice(vkPhysicalDevice),
 vkGraphicsQueue(vkGraphicsQueue),
 vkTransferQueue(vkTransferQueue)
 {
+    VmaVulkanFunctions vulkanFunctions = {};
+    vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
+    vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
+    
+    VmaAllocatorCreateInfo allocatorCreateInfo = {};
+    allocatorCreateInfo.flags = VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
+    allocatorCreateInfo.vulkanApiVersion = VK_API_VERSION_1_3;
+    allocatorCreateInfo.physicalDevice = vkPhysicalDevice;
+    allocatorCreateInfo.device = vkDevice;
+    allocatorCreateInfo.instance = vkInstance;
+    allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
+    
+    vmaCreateAllocator(&allocatorCreateInfo, &vmaAllocator);
+}
+
+void VulkanMemoryHandler::Cleanup()
+{
+    vmaDestroyAllocator(vmaAllocator);
 }
 
 /// @brief creates a buffer and device memory for the buffer
