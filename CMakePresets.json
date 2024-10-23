@@ -2,14 +2,14 @@
   "version": 3,
   "cmakeMinimumRequired": {
     "major": 3,
-    "minor": 28,
-    "patch": 0
+    "minor": 30,
+    "patch": 5
   },
   "configurePresets": [
     {
       "name": "linux-clang-debug",
       "displayName": "clang-debug-x64",
-      "description": "Clang 17.0.6 (x86_64)",
+      "description": "Clang 19.1.2 (x86_64)",
       "generator": "Ninja",
       "architecture": {
         "value": "x64",
@@ -21,13 +21,13 @@
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}",
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
-        "CMAKE_CXX_COMPILER_VERSION": "17.0.6"
+        "CMAKE_CXX_COMPILER_VERSION": "19.1.2"
       }
     },
     {
       "name": "linux-clang-release",
       "displayName": "clang-release-x64",
-      "description": "Clang 17.0.6 (x86_64)",
+      "description": "Clang 19.1.2 (x86_64)",
       "generator": "Ninja",
       "architecture": {
         "value": "x64",
@@ -39,7 +39,7 @@
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}",
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
-        "CMAKE_CXX_COMPILER_VERSION": "17.0.6"
+        "CMAKE_CXX_COMPILER_VERSION": "19.1.2"
       }
     }
   ]

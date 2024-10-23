@@ -2,17 +2,18 @@
 
 Development Environment:
 
-- Linux
-- Clang
-- CMake
+- Linux, Ubuntu 22.04
+- LLVM Clang 19.1.2
+- CMake 3.30.5
+- C++ 23
 - VS Code using Dev Containers (Docker)
 
 Libraries used: 
 
-- Vulkan SDK
-- SDL2
-- GLM
-- FMT
+- Vulkan SDK 1.3.290.0
+- SDL2 2.30.8
+- GLM 1.0.1
+- FMT 10.2.1
 
 # CMake Graph Visualizer
 
