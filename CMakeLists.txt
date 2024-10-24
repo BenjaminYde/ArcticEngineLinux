@@ -46,6 +46,8 @@ add_definitions(-DARCTIC_ASSETS_DIR="${CMAKE_CURRENT_LIST_DIR}/assets")
 # set vulkan flags
 add_definitions(-DVK_USE_PLATFORM_XCB_KHR)
 add_definitions(-DGLFW_EXPOSE_NATIVE_X11)
+add_compile_options(-Wno-nullability-completeness) # for Vulkan Memory Allocator
+
 
 # add sub directories
 add_subdirectory(external)

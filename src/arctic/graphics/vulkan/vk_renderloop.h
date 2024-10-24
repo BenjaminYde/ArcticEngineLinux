@@ -3,6 +3,7 @@
 #include <vector>
 #include <memory>
 #include <vulkan/vulkan_core.h>
+#include "vk_mem_alloc.h"
 
 class VulkanSwapChain;
 class VulkanRenderPipeline;
@@ -75,7 +76,7 @@ private:
 
     // .. mesh
     VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
+    VmaAllocation vertexBufferAllocation;
 
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;

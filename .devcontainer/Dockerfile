@@ -32,7 +32,7 @@ RUN apt -qq update && \
     apt -qq autoremove
 
 # Install CMAKE
-ENV CMAKE_VERSION 3.30.3
+ENV CMAKE_VERSION 3.30.5
 RUN apt update && \
     apt -qq install -y --no-install-recommends \
         graphviz \
@@ -81,17 +81,17 @@ ENV PATH="/opt/cmake/bin:${PATH}"
 #ENV PATH="/opt/clang-15.0.7/bin:${PATH}"
 
 # Download and install Clang binaries
-ENV CLANG_VERSION 17.0.6
+ENV CLANG_VERSION 19.1.2
 RUN cd /tmp && \
-    curl -L -O https://github.com/llvm/llvm-project/releases/download/llvmorg-${CLANG_VERSION}/clang+llvm-${CLANG_VERSION}-x86_64-linux-gnu-ubuntu-22.04.tar.xz && \
-    tar -xf clang+llvm-${CLANG_VERSION}-x86_64-linux-gnu-ubuntu-22.04.tar.xz && \
-    rm      clang+llvm-${CLANG_VERSION}-x86_64-linux-gnu-ubuntu-22.04.tar.xz
+    curl -L -O https://github.com/llvm/llvm-project/releases/download/llvmorg-${CLANG_VERSION}/LLVM-${CLANG_VERSION}-Linux-X64.tar.xz && \
+    tar -xf LLVM-${CLANG_VERSION}-Linux-X64.tar.xz && \
+    rm      LLVM-${CLANG_VERSION}-Linux-X64.tar.xz
     
 # Install Clang
 RUN cd /tmp && \
-    mkdir /opt/clang-${CLANG_VERSION} && \
-    mv clang+llvm-${CLANG_VERSION}-x86_64-linux-gnu-ubuntu-22.04/* /opt/clang-${CLANG_VERSION}
-ENV PATH="/opt/clang-${CLANG_VERSION}/bin:${PATH}"
+    mkdir /opt/LLVM-${CLANG_VERSION} && \
+    mv LLVM-${CLANG_VERSION}-Linux-X64/* /opt/LLVM-${CLANG_VERSION}
+ENV PATH="/opt/LLVM-${CLANG_VERSION}/bin:${PATH}"
 
 # Download and extract the LunarG Vulkan SDK
 ENV VULKAN_SDK_VERSION 1.3.290.0
@@ -189,7 +189,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libdecor-0-dev
 
 # Download and install SDL2 from source
-ENV SDL_VERSION 2.28.5
+ENV SDL_VERSION 2.30.8
 #RUN cd /tmp && \
 #    curl -L -O https://github.com/libsdl-org/SDL/archive/refs/tags/release-${SDL2_VERSION}.tar.gz && \
 #    tar xzf SDL2-${SDL2_VERSION}.tar.gz && \

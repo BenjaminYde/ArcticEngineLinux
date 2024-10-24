@@ -6,9 +6,9 @@
                 "${workspaceFolder}/**"
             ],
             "defines": [],
-            "compilerPath": "/opt/clang-17.0.6/bin/clang",
-            "cStandard": "c17",
-            "cppStandard": "c++17",
+            "compilerPath": "/opt/LLVM-19.1.2/bin/clang",
+            "cStandard": "c23",
+            "cppStandard": "c++23",
             "intelliSenseMode": "linux-clang-x64",
             "configurationProvider": "ms-vscode.cmake-tools"
         }

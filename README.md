@@ -2,17 +2,19 @@
 
 Development Environment:
 
-- Linux
-- Clang
-- CMake
+- Linux, Ubuntu 22.04
+- LLVM Clang 19.1.2
+- CMake 3.30.5
+- C++ 23
 - VS Code using Dev Containers (Docker)
 
 Libraries used: 
 
-- Vulkan SDK
-- SDL2
-- GLM
-- FMT
+- [Vulkan](https://www.lunarg.com/vulkan-sdk/): a new generation graphics and compute API that provides high-efficiency, cross-platform access to modern graphics processing units (GPUs), `1.3.290.0`
+- [SDL](https://github.com/libsdl-org/SDL): Simple Directmedia Layer (low level access to audio, keyboard, mouse, joystick, and graphics hardware),  `2.30.8`
+- [GLM](https://github.com/g-truc/glm): OpenGL Mathematics (GLM), `1.0.1`
+- [FMT](https://github.com/fmtlib/fmt): A modern formatting library, `10.2.1`
+- [VulkanMemoryAllocator](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator): Easy to integrate Vulkan memory allocation library, `3.1.0`
 
 # CMake Graph Visualizer
 

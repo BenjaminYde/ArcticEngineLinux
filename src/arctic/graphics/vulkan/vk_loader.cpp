@@ -62,6 +62,7 @@ VulkanLoader::VulkanLoader(std::shared_ptr<VulkanWindow> vulkanWindow)
     pMemoryHandler = std::shared_ptr<VulkanMemoryHandler>(new VulkanMemoryHandler(
         vkDevice,
         vkPhysicalDevice,
+        vkInstance,
         vkGraphicsQueue,
         vkTransferQueue
     ));
@@ -92,9 +93,6 @@ void VulkanLoader::Cleanup()
     // wait until device is not executing work
     vkDeviceWaitIdle(vkDevice);
 
-    // memory
-    pMemoryHandler.reset();
-
     // render loop
     pRenderLoop->CleanUp();
     pRenderLoop.reset();
@@ -106,6 +104,10 @@ void VulkanLoader::Cleanup()
     // images & swapchain
     pSwapchain->CleanUp(vkDevice);
     pSwapchain.reset();
+
+    // memory
+    pMemoryHandler->Cleanup();
+    pMemoryHandler.reset();
 
     // devices
     vkDestroyDevice(vkDevice, nullptr);

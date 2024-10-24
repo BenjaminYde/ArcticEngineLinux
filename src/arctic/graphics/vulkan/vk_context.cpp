@@ -4,6 +4,10 @@
 #include "vk_renderloop.h"
 #include "arctic/graphics/vulkan/vk_window.h"
 
+// should only be defined once in your entire project to prevent multiple definitions of VMA functions:
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
+
 VulkanContext::VulkanContext(std::shared_ptr<VulkanWindow> vulkanWindow)
 {
     pVulkanLoader = std::make_unique<VulkanLoader>(vulkanWindow);
@@ -11,7 +15,6 @@ VulkanContext::VulkanContext(std::shared_ptr<VulkanWindow> vulkanWindow)
 
 VulkanContext::~VulkanContext()
 {
-    
 }
 
 void VulkanContext::Cleanup()
