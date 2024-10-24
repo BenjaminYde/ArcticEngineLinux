@@ -1,7 +1,7 @@
 #include "vk_memory_handler.h"
 #include <iostream>
 #include <vector>
-
+#include <cstring>
 #include "vk_mem_alloc.h"
 
 VulkanMemoryHandler::VulkanMemoryHandler(
@@ -33,7 +33,7 @@ vkTransferQueue(vkTransferQueue)
 
 void VulkanMemoryHandler::Cleanup()
 {
-    vmaDestroyAllocator(vmaAllocator);
+    vmaDestroyAllocator(this->vmaAllocator);
 }
 
 /// @brief creates a buffer and device memory for the buffer
@@ -102,7 +102,7 @@ bool VulkanMemoryHandler::CreateBuffer(
 /// @param srcBuffer 
 /// @param dstBuffer 
 /// @param size 
-void VulkanMemoryHandler::CopyBuffer(
+bool VulkanMemoryHandler::CopyBufferToBuffer(
     VkBuffer srcBuffer, 
     VkBuffer dstBuffer, 
     VkDeviceSize size,
@@ -121,7 +121,7 @@ void VulkanMemoryHandler::CopyBuffer(
     if (result != VK_SUCCESS)
     {
         std::cout << "error: vulkan: failed to create command buffer!";
-        return;
+        return false;
     }
 
     // command buffer: start executing commands
@@ -139,7 +139,7 @@ void VulkanMemoryHandler::CopyBuffer(
     vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
     // command buffer: end executing commands
-    auto r = vkEndCommandBuffer(commandBuffer);
+    vkEndCommandBuffer(commandBuffer);
 
     // execute the command buffer
     VkSubmitInfo submitInfo{};
@@ -147,11 +147,12 @@ void VulkanMemoryHandler::CopyBuffer(
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
 
-    auto r2 =  vkQueueSubmit(this->vkTransferQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueSubmit(this->vkTransferQueue, 1, &submitInfo, VK_NULL_HANDLE);
     vkQueueWaitIdle(this->vkTransferQueue);
 
     // cleanup
     vkFreeCommandBuffers(this->vkDevice, commandPool, 1, &commandBuffer);
+    return true;
 }
 
 /// @brief 
@@ -181,4 +182,49 @@ bool VulkanMemoryHandler::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFl
         }
     }
     return false;
+}
+
+bool VulkanMemoryHandler::CopyDataToBuffer(void *pDataToCopy, VkDeviceSize bufferSize, VkDeviceMemory memory)
+{
+    void* data;
+    if(vkMapMemory(this->vkDevice, memory, 0, bufferSize, 0, &data) != VK_SUCCESS)
+        return false;
+    memcpy(data, pDataToCopy, bufferSize);
+    vkUnmapMemory(this->vkDevice, memory);
+    return true;
+}
+
+bool VulkanMemoryHandler::CreateBufferVMA(VkDeviceSize bufferSize, VkBufferUsageFlags usage, VmaAllocationCreateFlags vmaFlags, VkBuffer *pBuffer, VmaAllocation *pBufferAllocation)
+{
+    // create buffer info
+    VkBufferCreateInfo bufferInfo{};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = bufferSize;
+    bufferInfo.usage = usage;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    // create buffer vma
+    VmaAllocationCreateInfo allocCreateInfo{};
+    allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+    allocCreateInfo.flags = vmaFlags;
+
+    // create buffer vma
+    if (vmaCreateBuffer(this->vmaAllocator, &bufferInfo, &allocCreateInfo, pBuffer, pBufferAllocation, nullptr) != VK_SUCCESS)
+        return false;
+    return true;
+}
+
+bool VulkanMemoryHandler::CopyDataToBufferVMA(void* pDataToCopy, VkDeviceSize bufferSize, VmaAllocation &bufferAllocation)
+{
+    void* data;
+    if(vmaMapMemory(this->vmaAllocator, bufferAllocation, &data) != VK_SUCCESS)
+        return false;
+    memcpy(data, pDataToCopy, bufferSize);
+    vmaUnmapMemory(this->vmaAllocator, bufferAllocation);
+    return true;
+}
+
+VmaAllocator &VulkanMemoryHandler::GetAllocator()
+{
+    return this->vmaAllocator;
 }

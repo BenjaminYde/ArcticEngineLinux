@@ -106,7 +106,7 @@ void VulkanRenderLoop::CleanUp()
     this->vertexBuffer = VK_NULL_HANDLE;
     //vkFreeMemory(vkDevice, vertexBufferMemory, nullptr);
 
-    vmaDestroyBuffer(vkMemoryHandler->vmaAllocator, this->vertexBuffer, this->vertexBufferAllocation);
+    vmaDestroyBuffer(vkMemoryHandler->GetAllocator(), this->vertexBuffer, this->vertexBufferAllocation);
 
     vkDestroyBuffer(vkDevice, indexBuffer, nullptr);
     vkFreeMemory(vkDevice, indexBufferMemory, nullptr);
@@ -275,109 +275,70 @@ void VulkanRenderLoop::createCommandBuffers()
 
 bool VulkanRenderLoop::createVertexBuffer(std::vector<Vertex> vertices)
 {   
+    VkDeviceSize bufferSize = sizeof(Vertex) * vertices.size();
+    VmaAllocationCreateFlags vmaFlags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+    // staging buffer:
+    // >> with: the data is first copied to a CPU-friendly staging buffer and then transferred to the final GPU buffer, which is optimized for fast GPU access. This method is more efficient for GPU performance because the final buffer resides in device-local memory, which is faster for rendering.
+    // >> without: the data is copied directly into a buffer that can be accessed by both the CPU and GPU, but this memory type is not as fast for the GPU. While simpler, this method can reduce rendering performance because the buffer is not optimized for GPU access.
     bool useStagingBuffer = true;
     if(useStagingBuffer)
     {
-        VkDeviceSize bufferSize = sizeof(Vertex) * vertices.size();
-
+        // create staging buffer (CPU-accessible)
+        // >> buffer will serve as the source for data transfer operations to the GPU
         VkBuffer vertexBufferStaging;
         VmaAllocation bufferAllocationStaging;
+        VkBufferUsageFlags bufferUsage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        if(!vkMemoryHandler->CreateBufferVMA(bufferSize, bufferUsage, vmaFlags, &vertexBufferStaging, &bufferAllocationStaging))
+            return false;
 
-        // create vertex buffer: staging (cpu interaction)
-        // >> Buffer can be used as source in a memory transfer operation
-        {
-            VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        // copy vertex data to staging buffer (CPU memory)
+        if(!vkMemoryHandler->CopyDataToBufferVMA(vertices.data(), bufferSize, bufferAllocationStaging))
+            return false;
 
-            VkBufferCreateInfo bufferInfo{};
-            bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-            bufferInfo.size = bufferSize;
-            bufferInfo.usage = usage;
-            bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-            
-            VmaAllocationCreateInfo allocCreateInfo{};
-            allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
-            allocCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
-            VkResult result = vmaCreateBuffer(vkMemoryHandler->vmaAllocator, &bufferInfo, &allocCreateInfo, &vertexBufferStaging, &bufferAllocationStaging, nullptr);
+        // create final vertex buffer (GPU-accessible)
+        // >> buffer will be used as the destination for the data transfer and for rendering
+        // >> allocated in device-local memory, not directly accessible by the CPU which generally means that we're not able to use vkMapMemory
+        bufferUsage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        vmaFlags = 0;
+        if(!vkMemoryHandler->CreateBufferVMA(bufferSize, bufferUsage, vmaFlags, &this->vertexBuffer, &this->vertexBufferAllocation))
+            return false;
 
-            // copy vertices to memory
-            void* data;
-            result = vmaMapMemory(vkMemoryHandler->vmaAllocator, bufferAllocationStaging, &data);
-            memcpy(data, vertices.data(), (size_t) bufferSize);
-            vmaUnmapMemory(vkMemoryHandler->vmaAllocator, bufferAllocationStaging);
-        }
+        // transfer vertex data from staging buffer to final vertex buffer (GPU memory)
+        if(!vkMemoryHandler->CopyBufferToBuffer(vertexBufferStaging, this->vertexBuffer, bufferSize, this->vkCommandPoolTransfer))
+            return false;
 
-        // create vertex buffer: final (gpu interaction)
-        // >> Buffer can be used as destination in a memory transfer operation
-        // >> The finalvertexBuffer is allocated from a memory type that is device local, which generally means that we're not able to use vkMapMemory
-        {
-            VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-
-            VkBufferCreateInfo bufferInfo{};
-            bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-            bufferInfo.size = bufferSize;
-            bufferInfo.usage = usage;
-            bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-            VmaAllocationCreateInfo allocCreateInfo{};
-            allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
-            //allocCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
-            VkResult result = vmaCreateBuffer(vkMemoryHandler->vmaAllocator, &bufferInfo, &allocCreateInfo, &this->vertexBuffer, &this->vertexBufferAllocation, nullptr);
-        }
-
-        // copy vertex buffer data from staging to final
-        vkMemoryHandler->CopyBuffer(vertexBufferStaging, this->vertexBuffer, bufferSize, this->vkCommandPoolTransfer);
-
-        // cleanup vertex buffer staging (not used anymore)
-        vmaDestroyBuffer(vkMemoryHandler->vmaAllocator, vertexBufferStaging, bufferAllocationStaging);
+        // clean up staging buffer (no longer needed after data transfer)
+        vmaDestroyBuffer(vkMemoryHandler->GetAllocator(), vertexBufferStaging, bufferAllocationStaging);
     }
     else
     {
-        VkDeviceSize bufferSize = sizeof(Vertex) * vertices.size();
-        VkBufferUsageFlags usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-        //VkMemoryPropertyFlags memoryPropeties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        // create vertex buffer (GPU interaction)
+        // >> directly maps and copies vertex data into the GPU-accessible buffer
+        VkBufferUsageFlags bufferUsage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        if(!vkMemoryHandler->CreateBufferVMA(bufferSize, bufferUsage, vmaFlags, &vertexBuffer, &vertexBufferAllocation))
+            return false;
 
-        //if(!vkMemoryHandler->CreateBuffer(bufferSize, usage, memoryPropeties, this->vertexBuffer, this->vertexBufferMemory))
-            //return false;
-
-        //void* data;
-        //vkMapMemory(this->vkDevice, this->vertexBufferMemory, 0, bufferSize, 0, &data);
-        //    memcpy(data, vertices.data(), (size_t) bufferSize);
-        //vkUnmapMemory(this->vkDevice, this->vertexBufferMemory);
-
-
-        VkBufferCreateInfo bufferInfo{};
-        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        bufferInfo.size = bufferSize;
-        bufferInfo.usage = usage;
-        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-        VmaAllocationCreateInfo allocCreateInfo{};
-        allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
-        allocCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
-        VkResult result = vmaCreateBuffer(vkMemoryHandler->vmaAllocator, &bufferInfo, &allocCreateInfo, &this->vertexBuffer, &this->vertexBufferAllocation, nullptr);
-
-        // copy vertices to memory
-        void* data;
-        result = vmaMapMemory(vkMemoryHandler->vmaAllocator, this->vertexBufferAllocation, &data);
-        memcpy(data, vertices.data(), (size_t) bufferSize);
-        vmaUnmapMemory(vkMemoryHandler->vmaAllocator, this->vertexBufferAllocation);
+        // copy vertex data directly to the buffer (CPU memory)
+        if(!vkMemoryHandler->CopyDataToBufferVMA(vertices.data(), bufferSize, this->vertexBufferAllocation))
+            return false;
     }
-
     return true;
 }
 
 bool VulkanRenderLoop::createIndexBuffer(std::vector<uint32_t> indices)
 {
+    VkDeviceSize bufferSize = sizeof(Vertex) * indices.size();
+
     bool useStagingBuffer = true;
     if(useStagingBuffer)
     {
-        VkDeviceSize bufferSize = sizeof(Vertex) * indices.size();
 
         VkBuffer indexBufferStaging;
         VkDeviceMemory indexBufferMemoryStaging;
 
-        // create index buffer: staging (cpu interaction)
-        // >> Buffer can be used as source in a memory transfer operation
+        // create staging buffer (CPU-accessible)
+        // >> buffer will serve as the source for data transfer to the GPU
         {
             VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
             VkMemoryPropertyFlags memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -385,16 +346,14 @@ bool VulkanRenderLoop::createIndexBuffer(std::vector<uint32_t> indices)
             if(!vkMemoryHandler->CreateBuffer(bufferSize, usage, memoryProperties, indexBufferStaging, indexBufferMemoryStaging))
                 return false;
         
-            // copy indices to memory
-            void* data;
-            vkMapMemory(this->vkDevice, indexBufferMemoryStaging, 0, bufferSize, 0, &data);
-                memcpy(data, indices.data(), (size_t) bufferSize);
-            vkUnmapMemory(this->vkDevice, indexBufferMemoryStaging);
+            // copy index data to staging buffer (CPU memory)
+            if(!vkMemoryHandler->CopyDataToBuffer(indices.data(), bufferSize, indexBufferMemoryStaging))
+                return false;
         }
 
-        // create index buffer: final (gpu interaction)
-        // >> Buffer can be used as destination in a memory transfer operation
-        // >> The finalindexBuffer is allocated from a memory type that is device local, which generally means that we're not able to use vkMapMemory
+        // create final index buffer (GPU-accessible)
+        // >> buffer will be the destination for the data transfer and used for rendering
+        // >> allocated in device-local memory, meaning it's optimized for GPU but not CPU-accessible
         {
             VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
             VkMemoryPropertyFlags memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
@@ -403,15 +362,17 @@ bool VulkanRenderLoop::createIndexBuffer(std::vector<uint32_t> indices)
                 return false;
         }
 
-        // copy index buffer data from stating to final
-        vkMemoryHandler->CopyBuffer(indexBufferStaging, this->indexBuffer, bufferSize, this->vkCommandPoolTransfer);
+        // transfer index data from staging buffer to final index buffer (GPU memory)
+        vkMemoryHandler->CopyBufferToBuffer(indexBufferStaging, this->indexBuffer, bufferSize, this->vkCommandPoolTransfer);
 
-        // cleanup index buffer staging (not used anymore)
+        // cleanup staging buffer (no longer needed after data transfer)
         vkDestroyBuffer(this->vkDevice, indexBufferStaging, nullptr);
         vkFreeMemory(this->vkDevice, indexBufferMemoryStaging, nullptr);
     }
     else
     {
+        // create index buffer (CPU-accessible)
+        // >> this buffer will be directly used by both CPU and GPU
         VkDeviceSize bufferSize = sizeof(Vertex) * indices.size();
         VkBufferUsageFlags usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
         VkMemoryPropertyFlags memoryPropeties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -419,10 +380,9 @@ bool VulkanRenderLoop::createIndexBuffer(std::vector<uint32_t> indices)
         if(!vkMemoryHandler->CreateBuffer(bufferSize, usage, memoryPropeties, this->indexBuffer, this->indexBufferMemory))
             return false;
 
-        void* data;
-        vkMapMemory(this->vkDevice, this->indexBufferMemory, 0, bufferSize, 0, &data);
-            memcpy(data, indices.data(), (size_t) bufferSize);
-        vkUnmapMemory(this->vkDevice, this->indexBufferMemory);
+        // copy index data directly to buffer (CPU memory)
+        if(!vkMemoryHandler->CopyDataToBuffer(indices.data(), bufferSize, this->indexBufferMemory))
+                return false;
     }
     return true;
 }
@@ -692,7 +652,7 @@ void VulkanRenderLoop::createTextureImage()
     // copy pixels to memory
     void* data;
     vkMapMemory(this->vkDevice, this->stagingBufferMemory, 0, imageSize, 0, &data);
-        memcpy(data, pixels, (size_t) imageSize);
+    memcpy(data, pixels, (size_t) imageSize);
     vkUnmapMemory(this->vkDevice, this->stagingBufferMemory);
 
     // create image
